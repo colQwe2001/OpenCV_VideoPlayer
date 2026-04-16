@@ -1,0 +1,26 @@
+# Visual Studio
+x64/
+Debug/
+Release/
+.vs/
+*.exe
+*.dll
+*.obj
+*.pdb
+
+# Временные файлы
+*.mp3
+audio.mp3
+*.tmp
+Screenshots/
+
+# FFmpeg
+ffmpeg.exe
+
+# OpenCV
+opencv_world*.dll
+
+# Видео 
+*.mp4
+*.mov
+*.avi
