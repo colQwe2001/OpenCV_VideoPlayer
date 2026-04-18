@@ -66,27 +66,29 @@ void GetScreen(const cv::Mat& frameScreen) {
 class DrawSpecificFigure
 {
     private:
-        int RectangleX;
-        int RectangleY;
-        int RectangleWidth;
-        int RectangeHeight;
+        int x;
+        int y;
+        int width;
+        int height;
     public:
-        DrawSpecificFigure(int RectangleX, int RectangleY, int RectangleWidth, int RectangeHeight)
-        {
-            this->RectangleX = RectangleX;
-            this->RectangleY = RectangleY;
-            this->RectangleWidth = RectangleWidth;
-            this->RectangeHeight = RectangeHeight;
+        DrawSpecificFigure(int x, int y, int width, int height):
+            x(x), y(y), width(width), height(height) {
         }
-        void DrawRoundedRectangle(cv::Mat& img, const cv::Scalar FIGURE_COLOR, int radius) {
-            cv::rectangle(img,cv::Point(RectangleX, RectangleY - radius), cv::Point(RectangleX + RectangleWidth, RectangleY + RectangeHeight + radius),
-            cv::Scalar(FIGURE_COLOR), -1, cv::LINE_AA);
-            cv::rectangle(img, cv::Point(RectangleX - radius, RectangleY), cv::Point(RectangleX + RectangleWidth + radius, RectangleY + RectangeHeight ),
-                cv::Scalar(FIGURE_COLOR), -1, cv::LINE_AA);
-            cv::ellipse(img, cv::Point(RectangleX, RectangleY), cv::Size(radius, radius), 0, 180, 270, cv::Scalar(FIGURE_COLOR), -1, cv::LINE_AA);
-            cv::ellipse(img, cv::Point(RectangleX + RectangleWidth, RectangleY), cv::Size(radius, radius), 0, 270, 360, cv::Scalar(FIGURE_COLOR), -1, cv::LINE_AA);
-            cv::ellipse(img, cv::Point(RectangleX + RectangleWidth, RectangleY + RectangeHeight), cv::Size(radius, radius), 0, 0, 90, cv::Scalar(FIGURE_COLOR), -1, cv::LINE_AA);
-            cv::ellipse(img, cv::Point(RectangleX , RectangleY + RectangeHeight), cv::Size(radius, radius), 0, 90, 180, cv::Scalar(FIGURE_COLOR), -1, cv::LINE_AA);
+        void DrawRoundedRectangle(cv::Mat& img, const cv::Scalar& figureColor, int radius) {
+            if (radius <= 0) {
+                cv::rectangle(img, cv::Point(x, y), cv::Point(x + width, y + height),
+                    figureColor, -1, cv::LINE_AA);
+            }
+            else {
+                cv::rectangle(img, cv::Point(x, y - radius), cv::Point(x + width, y + height + radius),
+                    figureColor, -1, cv::LINE_AA);
+                cv::rectangle(img, cv::Point(x - radius, y), cv::Point(x + width + radius, y + height),
+                    figureColor, -1, cv::LINE_AA);
+                cv::ellipse(img, cv::Point(x, y), cv::Size(radius, radius), 0, 180, 270, figureColor, -1, cv::LINE_AA);
+                cv::ellipse(img, cv::Point(x + width, y), cv::Size(radius, radius), 0, 270, 360, figureColor, -1, cv::LINE_AA);
+                cv::ellipse(img, cv::Point(x + width, y + height), cv::Size(radius, radius), 0, 0, 90, figureColor, -1, cv::LINE_AA);
+                cv::ellipse(img, cv::Point(x, y + height), cv::Size(radius, radius), 0, 90, 180, figureColor, -1, cv::LINE_AA);
+            }
         }
 };
 
