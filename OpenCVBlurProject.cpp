@@ -55,20 +55,13 @@ void onMouse(int event, int x, int y, int, void*) {
 }
 
 void GetScreen(const cv::Mat& frameScreen) {
-    auto nowTime = std::chrono::system_clock::now();
-    std::time_t now = std::chrono::system_clock::to_time_t(nowTime);
-    struct tm* timeinfo = std::localtime(&now);
-    int NowYear = timeinfo->tm_year + 1900;
-    int NowMonth = timeinfo->tm_mon + 1;
-    int NowDay = timeinfo->tm_mday;
-    int NowHour = timeinfo->tm_hour;
-    int NowMinute = timeinfo->tm_min;
-    int NowSecond = timeinfo->tm_sec;
-    std::string filename = "Screenshots/screenshot_" + std::to_string(NowYear) + "_" + std::to_string(NowMonth) + "_" + std::to_string(NowDay) + "_" + std::to_string(NowHour) + "-" + std::to_string(NowMinute) + "-" + std::to_string(NowSecond) + ".png";
-    cv::imwrite(filename, frameScreen); //последний аргумент: frame - если сохраняем просто картинку из видео, result - если сохраняем скрин вместе с интерфейсом
+    std::time_t now = std::time(nullptr); // получаем количество секунд с 1970
+    struct tm* timeinfo = std::localtime(&now); // разбиваем их в читаемом формате
+    char filename[256];
+    strftime(filename, sizeof(filename), "Screenshots/screenshot_%Y_%m_%d_%H-%M-%S.png", timeinfo); 
+    cv::imwrite(filename, frameScreen); 
     std::cout << "Скриншот сохранён: " << filename << std::endl;
 }
-
 
 class DrawSpecificFigure
 {
