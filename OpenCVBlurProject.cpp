@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <chrono>
 #include <windows.h>
+#include <filesystem>
 
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio.h"
@@ -53,7 +54,7 @@ void onMouse(int event, int x, int y, int, void*) {
         mouseClicked = true;
     }
 }
-
+//Функция скриншота
 void GetScreen(const cv::Mat& frameScreen) {
     std::time_t now = std::time(nullptr); // получаем количество секунд с 1970
     struct tm* timeinfo = std::localtime(&now); // разбиваем их в читаемом формате
@@ -62,7 +63,36 @@ void GetScreen(const cv::Mat& frameScreen) {
     cv::imwrite(filename, frameScreen); 
     std::cout << "Скриншот сохранён: " << filename << std::endl;
 }
-
+//Функция конвертации
+std::string ConvertWEBMtoMP4(std::string inputFile) {
+    if (!std::filesystem::exists(inputFile)) {
+        std::cerr << "Ошибка: файл не существует: " << inputFile << std::endl;
+        return "";
+    }
+    if (inputFile.substr(inputFile.find_last_of(".")) != ".webm") {
+        std::cerr << "Ошибка: файл недопустимого формата: " << inputFile << std::endl;
+        return "";
+    }
+    std::string mp4Name = inputFile.substr(0, inputFile.find_last_of(".")) + ".mp4";
+    if (std::filesystem::exists(mp4Name)) {
+        std::cout << "MP4 файл уже существует, удалите его для переконвертации" << std::endl;
+        return mp4Name;
+    }
+    std::string cmd = "ffmpeg -i \"" + inputFile + "\" -c:v libx264 -c:a aac \"" + mp4Name + "\" -y -loglevel quiet";
+    std::cout << "Конвертирую WebM в MP4..." << std::endl;
+    system(cmd.c_str());
+    if (system(cmd.c_str()) != 0) {
+        std::cerr << "Ошибка: ffmpeg завершился с ошибкой" << std::endl;
+        return "";
+    }
+    if (!std::filesystem::exists(mp4Name)) {
+        std::cerr << "Ошибка: MP4 файл не создан!" << std::endl;
+        return "";
+    }
+    inputFile = mp4Name;
+    return inputFile;
+}
+//Класс рисования специфических фигур
 class DrawSpecificFigure
 {
     private:
@@ -101,26 +131,21 @@ int main(int argc, char* argv[]) {
     exeDir = exeDir.substr(0, exeDir.find_last_of("\\/")); // обрезаем строку с первого символа до последнего найденного слеша
     SetCurrentDirectoryA(exeDir.c_str()); // меняем рабочую папку на папку с программой
 
-
     //Открываем файл
     if (argc > 1) {
-        // Файл передан через "Открыть с помощью"
+        //Файл передан через "Открыть с помощью"
         Name = argv[1];
         std::cout << "Открываю файл: " << Name << std::endl;
     }
     else {
-        // Файл не передан — используем значение по умолчанию
+        //Файл не передан — используем значение по умолчанию
         Name = "Mult.mp4";
         std::cout << "Использую файл по умолчанию: " << Name << std::endl;
     }
-    std::string OldName;
+    //Передан файл с расширением .webm
+    std::string OldName = Name;
     if (Name.find(".webm")  != std::string::npos) {
-        std::string mp4Name = Name.substr(0, Name.find_last_of(".")) + ".mp4";
-        std::string cmd = "ffmpeg -i \"" + Name + "\" -c:v libx264 -c:a aac \"" + mp4Name + "\" -y -loglevel quiet";
-        std::cout << "Конвертирую WebM в MP4..." << std::endl;
-        system(cmd.c_str());
-        OldName = Name;
-        Name = mp4Name;
+        Name = ConvertWEBMtoMP4(Name);
         converted = true;
     }
 
