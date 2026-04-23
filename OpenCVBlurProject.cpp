@@ -100,6 +100,21 @@ std::string GetCodec(cv::VideoCapture& cap){
     };
     return std::string(codec);
 }
+
+void SetIcon(const std::string& WindowName,const std::string& IconFileName) {
+    HWND hwnd = FindWindowA(NULL, WindowName.c_str());  // берём активное окно
+    if (hwnd) {
+        HICON hIcon = (HICON)LoadImageA(NULL, IconFileName.c_str(), IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
+        if (hIcon) {
+            SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+            SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+            std::cout << "Иконка загружена из файла!" << std::endl;
+        }
+        else {
+            std::cout << "Файл app_icon.ico не найден или не является иконкой" << std::endl;
+        }
+    }
+}
 //Класс рисования специфических фигур
 class DrawSpecificFigure
 {
@@ -167,7 +182,7 @@ int main(int argc, char* argv[]) {
 
     //создаем окно 
     cv::namedWindow("Video Player", cv::WINDOW_NORMAL);
-    cv::setWindowProperty("Video Player", cv::WND_PROP_FULLSCREEN, cv::WINDOW_FULLSCREEN);
+    //cv::setWindowProperty("Video Player", cv::WND_PROP_FULLSCREEN, cv::WINDOW_FULLSCREEN);
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
     cv::Mat loadingScreen = cv::Mat::zeros(screenHeight, screenWidth, CV_8UC3);
@@ -235,32 +250,11 @@ int main(int argc, char* argv[]) {
     
     //Получаем кодек
     std::string codecStr = GetCodec(cap);
+    //Получаем размер
+    long long bytes = std::filesystem::file_size(Name);
+    std::string sizeString = std::to_string(bytes);
 
-    long long bytes;
-    long long kb;
-    long mb;
-    long gb;
-    std::string SizeString;
-    WIN32_FILE_ATTRIBUTE_DATA fdata;
-    if (GetFileAttributesExA(Name.c_str(), GetFileExInfoStandard, &fdata)) {
-        bytes = ((long long)fdata.nFileSizeHigh << 32) + fdata.nFileSizeLow;
-        SizeString = std::to_string(bytes);
-    }
-
-    HWND hwnd = GetActiveWindow();  // берём активное окно
-    if (hwnd) {
-        HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(101));
-        if (hIcon) {
-            SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);//заголовок окна иконка
-            SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);//иконка в панели задач
-        }
-        else {
-            std::cout << "Не удалось загрузить иконку!" << std::endl;
-        }
-    }
-    else {
-        std::cout << "Не удалось получить handle окна!" << std::endl;
-    }
+    SetIcon("Video Player","Icon.ico");
 
     while (true) {
         try {
