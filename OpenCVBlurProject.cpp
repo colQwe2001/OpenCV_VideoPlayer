@@ -16,9 +16,6 @@
 #undef min
 #endif
 
-const int MAX_FPS = 30;
-const int MAX_WIDTH = 1280;
-const int MAX_HEIGHT = 720;
 bool isPaused = false;
 cv::Point oldMousePos(0,0);
 cv::Point mousePos;
@@ -34,7 +31,6 @@ std::string command ;
 std::string Speed_Text = "1x";
 int line_width = 12.5;
 int Speed_Text_X = 14;
-bool isLoad = false;
 bool CurrentTime = true;
 int TimeStringLenght = 60;
 float volume = 1.0f;
@@ -91,6 +87,18 @@ std::string ConvertWEBMtoMP4(std::string inputFile) {
     }
     inputFile = mp4Name;
     return inputFile;
+}
+
+std::string GetCodec(cv::VideoCapture& cap){
+    int fourcc = cap.get(cv::CAP_PROP_FOURCC);
+    char codec[5] = {
+        (char)(fourcc & 0xFF),
+        (char)((fourcc >> 8) & 0xFF),
+        (char)((fourcc >> 16) & 0xFF),
+        (char)((fourcc >> 24) & 0xFF),
+        0
+    };
+    return std::string(codec);
 }
 //Класс рисования специфических фигур
 class DrawSpecificFigure
@@ -152,7 +160,7 @@ int main(int argc, char* argv[]) {
     // находим видео 
     cv::VideoCapture cap(Name);
     if (!cap.isOpened()) return -1;
-    std::string command = "ffmpeg -i " + Name + " -vn -acodec libmp3lame audio.mp3 -y -loglevel quiet";
+    std::string command = "ffmpeg -i \"" + Name + "\" -vn -acodec libmp3lame audio.mp3 -y -loglevel quiet";
     cv::Mat frame, resized;
     bool firstFrame = true;
     cv::Rect windowSize;
@@ -163,103 +171,70 @@ int main(int argc, char* argv[]) {
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
     cv::Mat loadingScreen = cv::Mat::zeros(screenHeight, screenWidth, CV_8UC3);
-
    
     //Вывод надписи о загрузке
-    if (isLoad == false) {
-        for (int i = 0; i < 12; i++) {
+        for (int i = 0; i < 4; i++) {
             loadingScreen = cv::Mat::zeros(screenHeight, screenWidth, CV_8UC3);  // очищаем
             std::string LoadingString = "Loading";
             for (int j = 0; j < (i % 4); j++) LoadingString += ".";
-
-            cv::putText(loadingScreen, LoadingString, cv::Point((screenWidth / 2) - 70, screenHeight / 2),
+                cv::putText(loadingScreen, LoadingString, cv::Point((screenWidth / 2) - 70, screenHeight / 2),
                 fontFace, 1.2, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-            cv::imshow("Video Player", loadingScreen);
-            cv::waitKey(300);  // пауза 200 мс
+                cv::imshow("Video Player", loadingScreen);
+                cv::waitKey(300);  // пауза 200 мс
         }
-    }
-
     std::cout << "Извлекаю аудио..." << std::endl;
     system(command.c_str());
 
     // ИНИЦИАЛИЗАЦИЯ ЗВУКА
-    if (ma_engine_init(NULL, &audioEngine) == MA_SUCCESS) {
+    if (!std::filesystem::exists("audio.mp3")) {
+        std::cerr << "audio.mp3 не найден" << std::endl;
+    }
+    else if (ma_engine_init(NULL, &audioEngine) == MA_SUCCESS) {
         if (ma_sound_init_from_file(&audioEngine, "audio.mp3", 0, NULL, NULL, &audioSound) == MA_SUCCESS) {
-            bool isLoad = true;
             ma_sound_start(&audioSound);
             audioInitialized = true;
             std::cout << " Звук загружен!" << std::endl;
         }
         else {
-            std::cout << " Не удалось загрузить audio.mp3" << std::endl;
+            std::cerr << " Не удалось загрузить audio.mp3" << std::endl;
+            ma_engine_uninit(&audioEngine);
         }
     }
     else {
-        std::cout << " Не удалось инициализировать звук" << std::endl;
+        std::cerr << " Не удалось инициализировать звук" << std::endl;
     }
 
     //вычисления для ФПС и корректного времени воспроизведения
     int totalFrames = cap.get(cv::CAP_PROP_FRAME_COUNT);
     double fps = cap.get(cv::CAP_PROP_FPS);
-    double reportedDuration = totalFrames / fps;
-    double correctFPS = totalFrames / reportedDuration;
-    int targetDelay;
-    if (correctFPS < MAX_FPS) {
-        targetDelay = (int)(1000.0 / correctFPS);
-    }
-    else {
-        targetDelay = (int)(1000.0 / MAX_FPS);
-    }
+    int targetDelay = (int)(1000.0 / fps);
     int x2Delay = targetDelay / 2;
     int x1_5Delay = targetDelay / 1.5;
     int x1Delay = targetDelay;
     int x0_5Delay = targetDelay * 2;
     int framesIn10Seconds = (int)(fps * 10);
     std::cout << "Target delay: " << targetDelay << "ms" << std::endl;
-    std::cout << "Fps: " << fps << "myFps" << correctFPS << std::endl;
+    std::cout << "Fps: " << fps << std::endl;
 
-
+    //Получение информации о видео
     float audioLength;
     ma_sound_get_length_in_seconds(&audioSound, &audioLength);
     double videoLength = totalFrames / fps;
     std::cout << "Длина видео: " << videoLength << " сек" << std::endl;
     std::cout << "Длина аудио: " << audioLength << " сек" << std::endl;
-
-    
-    cv::setMouseCallback("Video Player", onMouse);
-
     //узнаем размеры видео
     int videoW = cap.get(cv::CAP_PROP_FRAME_WIDTH);
     int videoH = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
-    if (videoW > MAX_WIDTH || videoH > MAX_HEIGHT) {
-        cap.set(cv::CAP_PROP_FRAME_WIDTH, MAX_WIDTH);
-        cap.set(cv::CAP_PROP_FRAME_HEIGHT, MAX_HEIGHT);
-        // Обновляем размеры
-        videoW = cap.get(cv::CAP_PROP_FRAME_WIDTH);
-        videoH = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
-    }
     std::cout << "Video: " << videoW << "x" << videoH << std::endl;
-
+    cv::setMouseCallback("Video Player", onMouse);
 
     auto lastFrameTime = std::chrono::steady_clock::now();
 
     cap >> frame;
     if (frame.empty()) return -1;
     
-    //Старт для таймера
-    auto startTimer = std::chrono::steady_clock::now();
-    
     //Получаем кодек
-    std::string codecStr2 = std::to_string(cap.get(cv::CAP_PROP_FOURCC));
-    int fourcc = cap.get(cv::CAP_PROP_FOURCC);
-        char codec[5] = {
-            (char)(fourcc & 0xFF),
-            (char)((fourcc >> 8) & 0xFF),
-            (char)((fourcc >> 16) & 0xFF),
-            (char)((fourcc >> 24) & 0xFF),
-            0
-        };
-    std::string codecStr = codec;
+    std::string codecStr = GetCodec(cap);
 
     long long bytes;
     long long kb;
@@ -1113,6 +1088,7 @@ int main(int argc, char* argv[]) {
     }
 
     if (audioInitialized) {
+        audioInitialized = false;
         ma_sound_uninit(&audioSound);
         ma_engine_uninit(&audioEngine);
     }
