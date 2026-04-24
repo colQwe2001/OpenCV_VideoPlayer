@@ -115,6 +115,7 @@ void SetIcon(const std::string& WindowName,const std::string& IconFileName) {
         }
     }
 }
+
 //Класс рисования специфических фигур
 class DrawSpecificFigure
 {
@@ -182,7 +183,7 @@ int main(int argc, char* argv[]) {
 
     //создаем окно 
     cv::namedWindow("Video Player", cv::WINDOW_NORMAL);
-    //cv::setWindowProperty("Video Player", cv::WND_PROP_FULLSCREEN, cv::WINDOW_FULLSCREEN);
+    cv::setWindowProperty("Video Player", cv::WND_PROP_FULLSCREEN, cv::WINDOW_FULLSCREEN);
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
     cv::Mat loadingScreen = cv::Mat::zeros(screenHeight, screenWidth, CV_8UC3);
@@ -228,8 +229,8 @@ int main(int argc, char* argv[]) {
     int x1Delay = targetDelay;
     int x0_5Delay = targetDelay * 2;
     int framesIn10Seconds = (int)(fps * 10);
-    std::cout << "Target delay: " << targetDelay << "ms" << std::endl;
-    std::cout << "Fps: " << fps << std::endl;
+    std::cout << "Длина видео: " << targetDelay << "мс" << std::endl;
+    std::cout << "ФПС: " << fps << std::endl;
 
     //Получение информации о видео
     float audioLength;
@@ -253,56 +254,51 @@ int main(int argc, char* argv[]) {
     //Получаем размер
     long long bytes = std::filesystem::file_size(Name);
     std::string sizeString = std::to_string(bytes);
-
+    //Устанавливаем иконку
     SetIcon("Video Player","Icon.ico");
 
     while (true) {
-        try {
-            if (cv::getWindowProperty("Video Player", cv::WND_PROP_VISIBLE) <= 0) {
-                std::cout << "Window closed" << std::endl;
-                break;
-            }
-        }
-        catch (...) {
+        if (cv::getWindowProperty("Video Player", cv::WND_PROP_VISIBLE) <= 0) {
+            std::cout << "Окно закрыто" << std::endl;
             break;
         }
 
         auto currentTime = std::chrono::steady_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>
             (currentTime - lastFrameTime).count();
-
+        //Проверка на окончание видео
         if (!isPaused && elapsed >= targetDelay) {
             cv::Mat newFrame;
             cap >> newFrame;
-            if (!newFrame.empty()) {
+            if (newFrame.empty()) {
+                frame.release();
+            }
+            else {
                 frame = newFrame;
                 lastFrameTime = currentTime;
             }
-            else {
-                if (audioInitialized) ma_sound_stop(&audioSound);
-                cv::destroyAllWindows();
-                break;
-            }
         }
-
         if (frame.empty()) {
+            if (audioInitialized) {
+                ma_sound_stop(&audioSound);
+            }
             cv::destroyAllWindows();
             break;
         }
 
         if (firstFrame) {
             windowSize = cv::getWindowImageRect("Video Player");
-            std::cout << "Window: " << windowSize.width << "x" << windowSize.height << std::endl;
-
-
+            if (windowSize.width <= 0 || windowSize.height <= 0) {
+                windowSize = cv::Rect(0, 0, 1280, 720);
+            }
+            std::cout << "Размеры окна " << windowSize.width << "x" << windowSize.height << std::endl;
             firstFrame = false;
         }
-
         cv::Mat result = cv::Mat::zeros(windowSize.height, windowSize.width, frame.type());
         int NewY = windowSize.height - 80;
-
-        if (NewY <= 0) NewY = 100;
-
+        if (NewY <= 0) {
+            NewY = 100;
+        }
         float windowAspect = (float)windowSize.height / windowSize.width;
         float videoAspect = (float)videoH / videoW;
 
@@ -310,9 +306,7 @@ int main(int argc, char* argv[]) {
             int newHeight = NewY;
             int newWidth = (int)(newHeight / videoAspect);
             int offsetX = std::max(0, (windowSize.width - newWidth) / 2);
-
             cv::resize(frame, resized, cv::Size(newWidth, newHeight));
-            //cv::resize(frame, resized, cv::Size(newWidth, newHeight), 0, 0, cv::INTER_NEAREST); - низкое качество для слабых
             cv::Rect roi(offsetX, 0, newWidth, newHeight);
             resized.copyTo(result(roi));
         }
@@ -321,7 +315,7 @@ int main(int argc, char* argv[]) {
             int newHeight = (int)(newWidth * videoAspect);
             int offsetY = 0;
             cv::resize(frame, resized, cv::Size(newWidth, newHeight));
-            //cv::resize(frame, resized, cv::Size(newWidth, newHeight), 0, 0, cv::INTER_NEAREST);
+
             cv::Rect roi(0, offsetY, newWidth, newHeight);
             resized.copyTo(result(roi));
         }
@@ -340,43 +334,25 @@ int main(int argc, char* argv[]) {
         int remainingTimeSeconds = remainingTime % 60;
         std::string remainingTimeMinutesString = std::to_string(remainingTimeMinutes);
         std::string remainingTimeSecondsString = std::to_string(remainingTimeSeconds);
-        int TimeCenterX = windowSize.width - 150;
-        int TimeCenterY = windowSize.height - 40;
 
         //Название видео
-        std::string FinalName = Name.substr(Name.find_last_of("\\/") + 1);
+        std::string FinalName;
+        if (converted == false) {
+           FinalName = Name.substr(Name.find_last_of("\\/") + 1);
+        }
+        else {
+           FinalName = OldName.substr(OldName.find_last_of("\\/") + 1);
+        }
         if (IsSleep == false) {
-            if (converted == false) {
-                if (FinalName.length() < 10) {
-                    cv::putText(result, FinalName,
-                        cv::Point(50, windowSize.height - 37.5),
-                        fontFace, 0.9,
-                        cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-                }
-                else {
-                    cv::putText(result, FinalName.substr(0, 13) + ".." + FinalName.substr(FinalName.find_last_of(".")),
-                        cv::Point(50, windowSize.height - 37.5),
-                        fontFace, 0.9,
-                        cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-                }
+            if (FinalName.length() < 10) {
+                cv::putText(result, FinalName,cv::Point(50, windowSize.height - 37.5),fontFace, 0.9,cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
             }
             else {
-                std::string OldFinalName = OldName.substr(OldName.find_last_of("\\/") + 1);
-                if (OldFinalName.length() < 10) {
-                    cv::putText(result, OldFinalName,
-                        cv::Point(50, windowSize.height - 37.5),
-                        fontFace, 0.9,
-                        cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-                }
-                else {
-                    cv::putText(result, OldFinalName.substr(0, 13) + ".." + OldFinalName.substr(OldFinalName.find_last_of(".")),
-                        cv::Point(50, windowSize.height - 37.5),
-                        fontFace, 0.9,
-                        cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-                }
+                cv::putText(result, FinalName.substr(0, 13) + ".." + FinalName.substr(FinalName.find_last_of(".")),
+                cv::Point(50, windowSize.height - 37.5),fontFace, 0.9,cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
             }
         }
-
+     
         //Кнопка свойств видео
         if (IsSleep == false) {
             int buttonXInfo = windowSize.width / 2 - 370;
@@ -597,6 +573,8 @@ int main(int argc, char* argv[]) {
         }
         
         //Время видео
+        int TimeCenterX = windowSize.width - 150;
+        int TimeCenterY = windowSize.height - 40;
         if (mouseClicked && (mousePos.x > TimeCenterX+0 && mousePos.x < TimeCenterX + TimeStringLenght) && (mousePos.y > TimeCenterY - 10 && mousePos.y < TimeCenterY + 10)) {
             CurrentTime = !CurrentTime;
             mouseClicked = false;
