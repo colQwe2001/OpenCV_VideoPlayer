@@ -116,6 +116,161 @@ void SetIcon(const std::string& WindowName,const std::string& IconFileName) {
     }
 }
 
+void InfoDraw(cv::Mat& resultWin, cv::Rect& sizeOfWindow) {
+    int btnX = sizeOfWindow.width / 2 - 370;
+    int btnY = sizeOfWindow.height - 37.5;
+    cv::putText(resultWin, "i",
+        cv::Point(btnX, btnY),
+        fontFace, 0.8,
+        cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+    float dist = std::hypot(mousePos.x - (btnX + 5), mousePos.y - (btnY - 7));
+    if (mouseClicked && dist <= 15) {
+        featuresActive = !featuresActive;
+        mouseClicked = false;
+    }
+    else if (dist <= 15) {
+        cv::circle(resultWin, cv::Point(btnX + 3, btnY - 8), 15, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+    }
+}
+std::string GetCodec(std::string codecStr, std::string VideoName, std::string OldVideoName) {
+    std::string codecStrPrint;
+    if (converted == false) {
+        if (codecStr == "h264" || codecStr == "H264" || codecStr == "avc1" || codecStr == "AVC1") codecStrPrint = "H.264/AVC";
+        else if (codecStr == "hev1" || codecStr == "HEVC" || codecStr == "hevc" || codecStr == "hvc1" || codecStr == "h265" || codecStr == "H265") codecStrPrint = "H.265/HEVC";
+        else if (codecStr == "h261" || codecStr == "H261") codecStrPrint = "H.261";
+        else if (codecStr == "h262" || codecStr == "H262") codecStrPrint = "H.261/MPEG-2";
+        else if (codecStr == "h263" || codecStr == "H263") codecStrPrint = "H.263";
+        else if (codecStr == "MPG1" || codecStr == "mpg1" || codecStr == "MPEG") codecStrPrint = "MPEG - 1";
+        else if (codecStr == "MPG2" || codecStr == "mpg2") codecStrPrint = "MPEG - 2";
+        else if (codecStr == "MPG4" || codecStr == "mpg4" || codecStr == "mp4v" || codecStr == "MP4V" || codecStr == "XVID" || codecStr == "DIVX") codecStrPrint = "MPEG-4";
+        else if (codecStr == "WMV1" || codecStr == "wmv1") codecStrPrint = "Windows Media Video 7";
+        else if (codecStr == "WMV2" || codecStr == "wmv2") codecStrPrint = "Windows Media Video 8";
+        else if (codecStr == "WMV3" || codecStr == "wmv3") codecStrPrint = "Windows Media Video 9";
+        else if (codecStr == "RV10" || codecStr == "rv10") codecStrPrint = "RealVideo 1.0";
+        else if (codecStr == "RV20" || codecStr == "rv20") codecStrPrint = "RealVideo 2.0";
+        else if (codecStr == "RV30" || codecStr == "rv30") codecStrPrint = "RealVideo 3.0";
+        else if (codecStr == "VP80" || codecStr == "vp80") codecStrPrint = "VP8";
+        else if (codecStr == "VP90" || codecStr == "vp90") codecStrPrint = "VP9";
+        else if (codecStr == "AV01" || codecStr == "av01") codecStrPrint = "AV1";
+        else if (codecStr == "JPEG" || codecStr == "jpeg" || codecStr == "mjpa" || codecStr == "mjpb" || codecStr == "MJPG" || codecStr == "mjpg") codecStrPrint = "Motion JPEG";
+        else if (codecStr == "PNG" || codecStr == "png") codecStrPrint = "PNG";
+        else if (codecStr == "apch" || codecStr == "apcn" || codecStr == "apco" || codecStr == "ap4h") codecStrPrint = "Apple ProRes";
+        else if (codecStr == "DV25" || codecStr == "dv25") codecStrPrint = "DV (MiniDV)";
+        else if (codecStr == "DV50" || codecStr == "dv50") codecStrPrint = "DVCPRO 50";
+        else if (codecStr == "dvc") codecStrPrint = "DVCPRO HD";
+        else if (codecStr == "MJPEG" || codecStr == "mjpeg" || codecStr == "MJPG") codecStrPrint = "MJPEG";
+        else if (codecStr == "FLV1" || codecStr == "flv1") codecStrPrint = "Flash Video";
+        else if (codecStr == "THEO" || codecStr == "theo") codecStrPrint = "Theora";
+        else if (codecStr == "LAGS" || codecStr == "lags") codecStrPrint = "Lagarith";
+        else if (codecStr == "HFYU" || codecStr == "hfy u") codecStrPrint = "HuffYUV";
+        else if (codecStr == "FFV1" || codecStr == "ffv1") codecStrPrint = "FFV1";
+        else if (codecStr == "MAGY" || codecStr == "magy") codecStrPrint = "MagicYUV";
+        else if (codecStr == "UTVI" || codecStr == "utvi") codecStrPrint = "Ut Video";
+        else if (codecStr == "CVID" || codecStr == "cvid") codecStrPrint = "Cinepak";
+        else if (codecStr == "IV32" || codecStr == "iv32") codecStrPrint = "Intel Indeo 3.2";
+        else if (codecStr == "IV41" || codecStr == "iv41") codecStrPrint = "Intel Indeo 4.1";
+        else if (codecStr == "IV50" || codecStr == "iv50") codecStrPrint = "Intel Indeo 5.0";
+        else if (codecStr == "QTRP" || codecStr == "qtrp") codecStrPrint = "QuickTime RPZA";
+        else if (codecStr == "SMC" || codecStr == "smc") codecStrPrint = "QuickTime SMC";
+        else {
+            std::string ext = VideoName.substr(VideoName.find_last_of(".") + 1);
+            if (ext == "mp4" || ext == "m4v") codecStrPrint = "H.264/AVC (MP4)";
+            if (ext == "avi") codecStrPrint = "AVI (DivX/Xvid/MPEG-4)";
+            if (ext == "mkv") codecStrPrint = "MKV (different)";
+            if (ext == "mov") codecStrPrint = "QuickTime (H.264/ProRes)";
+            if (ext == "wmv") codecStrPrint = "Windows Media Video";
+            if (ext == "flv") codecStrPrint = "Flash Video";
+            if (ext == "webm") codecStrPrint = "WebM (VP8/VP9)";
+        }
+        return codecStrPrint;
+    }
+    else {
+        std::string ConvertedFinalString = OldVideoName.substr(OldVideoName.find_last_of("\\/") + 1);
+        std::string ext = OldVideoName.substr(OldVideoName.find_last_of(".") + 1);
+        if (ext == "mp4" || ext == "m4v") codecStrPrint = "H.264/AVC (MP4)";
+        if (ext == "avi") codecStrPrint = "AVI (DivX/Xvid/MPEG-4)";
+        if (ext == "mkv") codecStrPrint = "MKV (разный)";
+        if (ext == "mov") codecStrPrint = "QuickTime (H.264/ProRes)";
+        if (ext == "wmv") codecStrPrint = "Windows Media Video";
+        if (ext == "flv") codecStrPrint = "Flash Video";
+        if (ext == "webm") codecStrPrint = "WebM (VP8/VP9)";
+    }
+}
+
+std::string GetSize(long long bytes) {
+    char sizeText[32];
+    if (bytes < 1024) {
+        sprintf(sizeText, "Video size: %.2f B", (double)bytes);
+    }
+    else if (bytes > 1024 && bytes < 1024 * 1024) {
+        double kb = bytes / 1024.0;
+        sprintf(sizeText, "Video size: %.2f KB", kb);
+    }
+    else if (bytes >= 1024 * 1024 && bytes < 1024 * 1024 * 1024) {
+        double mb = bytes / (1024.0 * 1024.0);
+        sprintf(sizeText, "Video size: %.2f MB", mb);
+    }
+    else if (bytes >= 1024 * 1024 * 1024) {
+        double gb = bytes / (1024.0 * 1024.0 * 1024.0);
+        sprintf(sizeText, "Video size: %.2f GB", gb);
+    }
+    return std::string(sizeText);
+}
+
+void FeaturesDraw(cv::Mat& resultWin, cv::Rect& sizeOfWindow, std::string VideoName, std::string OldVideoName, std::string Minutes, std::string Seconds, int WindowWidth, int WindowHeight, double fps, std::string codecStr, std::string sizeText) {
+    int NameIndex = VideoName.find_last_of(".");
+    cv::putText(resultWin, "Features",
+        cv::Point((sizeOfWindow.width) / 4 + 40, (sizeOfWindow.height) / 4 + 40),
+        fontFace, 1.0,
+        cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+    cv::putText(resultWin, "Name: " + VideoName.substr(0, NameIndex),
+        cv::Point((sizeOfWindow.width) / 4 + 40, (sizeOfWindow.height) / 4 + 85),
+        fontFace, 0.6,
+        cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+    cv::putText(resultWin, "Duration: " + Minutes + ":" + Seconds,
+        cv::Point((sizeOfWindow.width) / 4 + 40, (sizeOfWindow.height) / 4 + 120),
+        fontFace, 0.6,
+        cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+    if (converted == false) {
+        cv::putText(resultWin, "Video format: " + VideoName.substr(NameIndex),
+            cv::Point((sizeOfWindow.width) / 4 + 40, (sizeOfWindow.height) / 4 + 155),
+            fontFace, 0.6,
+            cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+    }
+    else {
+        cv::putText(resultWin, "Video format: " + OldVideoName.substr(OldVideoName.find_last_of(".")),
+            cv::Point((sizeOfWindow.width) / 4 + 40, (sizeOfWindow.height) / 4 + 155),
+            fontFace, 0.6,
+            cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+    }
+    std::string videoResolutionX = std::to_string(WindowWidth);
+    std::string videoResolutionY = std::to_string(WindowHeight);
+    cv::putText(resultWin, "Video resolution: " + videoResolutionX + "x" + videoResolutionY,
+        cv::Point((sizeOfWindow.width) / 4 + 40, (sizeOfWindow.height) / 4 + 190),
+        fontFace, 0.6,
+        cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+    std::string videoFPSstring = std::to_string((int)fps);
+    cv::putText(resultWin, "Frame rate: " + videoFPSstring,
+        cv::Point((sizeOfWindow.width) / 4 + 40, (sizeOfWindow.height) / 4 + 225),
+        fontFace, 0.6,
+        cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+    int IndexOfDot = Name.find_last_of("\\/") + 1;
+    cv::putText(resultWin, "File location: " + Name.substr(0, IndexOfDot),
+        cv::Point((sizeOfWindow.width) / 4 + 40, (sizeOfWindow.height) / 4 + 330),
+        fontFace, 0.6,
+        cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+    cv::putText(resultWin, "Codec: " + codecStr,
+        cv::Point((sizeOfWindow.width) / 4 + 40, (sizeOfWindow.height) / 4 + 260),
+        fontFace, 0.6,
+        cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+    cv::putText(resultWin, sizeText,
+        cv::Point((sizeOfWindow.width) / 4 + 40, (sizeOfWindow.height) / 4 + 295),
+        fontFace, 0.6, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+    cv::putText(resultWin, "Exit",
+        cv::Point((sizeOfWindow.width) / 2 + 262, (((sizeOfWindow.height) / 4) * 3) - 35),
+        fontFace, 0.6,
+        cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+}
 //Класс рисования специфических фигур
 class DrawSpecificFigure
 {
@@ -355,185 +510,23 @@ int main(int argc, char* argv[]) {
      
         //Кнопка свойств видео
         if (IsSleep == false) {
-            int buttonXInfo = windowSize.width / 2 - 370;
-            int buttonYInfo = windowSize.height - 37.5;
-            int dxInfo = mousePos.x - (buttonXInfo + 5);
-            int dyInfo = mousePos.y - (buttonYInfo - 7);
-
-            cv::putText(result, "i",
-                cv::Point(buttonXInfo, buttonYInfo),
-                fontFace, 0.8,
-                cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-
-            float distanceInfo = std::sqrt(dxInfo * dxInfo + dyInfo * dyInfo);
-
-            if (mouseClicked && distanceInfo <= 15) {
-                featuresActive = !featuresActive;
-                mouseClicked = false;
-            }
-            else if (distanceInfo <= 15) {
-                cv::circle(result, cv::Point(buttonXInfo + 3, buttonYInfo - 8), 15, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-            }
+            InfoDraw(result, windowSize);
         }
         int NameIndex = FinalName.find_last_of(".");
         if (featuresActive == true) {
             DrawSpecificFigure FeaturesBG((windowSize.width) / 4, (windowSize.height) / 4, (windowSize.width) / 2, (windowSize.height) / 2);
             FeaturesBG.DrawRoundedRectangle(result, cv::Scalar(30, 30, 30), 20);
-            cv::putText(result, "Features",
-                cv::Point((windowSize.width) / 4 + 40, (windowSize.height) / 4 + 40),
-                fontFace, 1.0,
-                cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-            cv::putText(result, "Name: " + FinalName.substr(0, NameIndex),
-                cv::Point((windowSize.width) / 4 + 40, (windowSize.height) / 4 + 85),
-                fontFace, 0.6,
-                cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-            cv::putText(result, "Duration: " + totalTimeStringMinutes + ":" + totalTimeStringSeconds,
-                cv::Point((windowSize.width) / 4 + 40, (windowSize.height) / 4 + 120),
-                fontFace, 0.6,
-                cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-            if (converted == false) {
-                cv::putText(result, "Video format: " + FinalName.substr(NameIndex),
-                    cv::Point((windowSize.width) / 4 + 40, (windowSize.height) / 4 + 155),
-                    fontFace, 0.6,
-                    cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-            }
-            else {
-                cv::putText(result, "Video format: " + OldName.substr(OldName.find_last_of(".")),
-                    cv::Point((windowSize.width) / 4 + 40, (windowSize.height) / 4 + 155),
-                    fontFace, 0.6,
-                    cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-            }
-
-            //Переменные для вычисления разрешения
-            std::string videoResolutionXstring = std::to_string(videoW);
-            std::string videoResolutionYstring = std::to_string(videoH);
-            cv::putText(result, "Video resolution: " + videoResolutionXstring + "x" + videoResolutionYstring,
-                cv::Point((windowSize.width) / 4 + 40, (windowSize.height) / 4 + 190),
-                fontFace, 0.6,
-                cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-            std::string videoFPSstring = std::to_string((int)fps); 
-            cv::putText(result, "Frame rate: " + videoFPSstring,
-                cv::Point((windowSize.width) / 4 + 40, (windowSize.height) / 4 + 225),
-                fontFace, 0.6,
-                cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-
-            std::string codecStrPrint;
-            if (converted == false) {
-                if (codecStr == "h264" || codecStr == "H264" || codecStr == "avc1" || codecStr == "AVC1") codecStrPrint = "H.264/AVC";
-                else if (codecStr == "hev1" || codecStr == "HEVC" || codecStr == "hevc" || codecStr == "hvc1" || codecStr == "h265" || codecStr == "H265") codecStrPrint = "H.265/HEVC";
-                else if (codecStr == "h261" || codecStr == "H261") codecStrPrint = "H.261";
-                else if (codecStr == "h262" || codecStr == "H262") codecStrPrint = "H.261/MPEG-2";
-                else if (codecStr == "h263" || codecStr == "H263") codecStrPrint = "H.263";
-                else if (codecStr == "MPG1" || codecStr == "mpg1" || codecStr == "MPEG") codecStrPrint = "MPEG - 1";
-                else if (codecStr == "MPG2" || codecStr == "mpg2") codecStrPrint = "MPEG - 2";
-                else if (codecStr == "MPG4" || codecStr == "mpg4" || codecStr == "mp4v" || codecStr == "MP4V" || codecStr == "XVID" || codecStr == "DIVX") codecStrPrint = "MPEG-4";
-                else if (codecStr == "WMV1" || codecStr == "wmv1") codecStrPrint = "Windows Media Video 7";
-                else if (codecStr == "WMV2" || codecStr == "wmv2") codecStrPrint = "Windows Media Video 8";
-                else if (codecStr == "WMV3" || codecStr == "wmv3") codecStrPrint = "Windows Media Video 9";
-                else if (codecStr == "RV10" || codecStr == "rv10") codecStrPrint = "RealVideo 1.0";
-                else if (codecStr == "RV20" || codecStr == "rv20") codecStrPrint = "RealVideo 2.0";
-                else if (codecStr == "RV30" || codecStr == "rv30") codecStrPrint = "RealVideo 3.0";
-                else if (codecStr == "VP80" || codecStr == "vp80") codecStrPrint = "VP8";
-                else if (codecStr == "VP90" || codecStr == "vp90") codecStrPrint = "VP9";
-                else if (codecStr == "AV01" || codecStr == "av01") codecStrPrint = "AV1";
-                else if (codecStr == "JPEG" || codecStr == "jpeg" || codecStr == "mjpa" || codecStr == "mjpb" || codecStr == "MJPG" || codecStr == "mjpg") codecStrPrint = "Motion JPEG";
-                else if (codecStr == "PNG" || codecStr == "png") codecStrPrint = "PNG";
-                else if (codecStr == "apch" || codecStr == "apcn" || codecStr == "apco" || codecStr == "ap4h") codecStrPrint = "Apple ProRes";
-                else if (codecStr == "DV25" || codecStr == "dv25") codecStrPrint = "DV (MiniDV)";
-                else if (codecStr == "DV50" || codecStr == "dv50") codecStrPrint = "DVCPRO 50";
-                else if (codecStr == "dvc") codecStrPrint = "DVCPRO HD";
-                else if (codecStr == "MJPEG" || codecStr == "mjpeg" || codecStr == "MJPG") codecStrPrint = "MJPEG";
-                else if (codecStr == "FLV1" || codecStr == "flv1") codecStrPrint = "Flash Video";
-                else if (codecStr == "THEO" || codecStr == "theo") codecStrPrint = "Theora";
-                else if (codecStr == "LAGS" || codecStr == "lags") codecStrPrint = "Lagarith";
-                else if (codecStr == "HFYU" || codecStr == "hfy u") codecStrPrint = "HuffYUV";
-                else if (codecStr == "FFV1" || codecStr == "ffv1") codecStrPrint = "FFV1";
-                else if (codecStr == "MAGY" || codecStr == "magy") codecStrPrint = "MagicYUV";
-                else if (codecStr == "UTVI" || codecStr == "utvi") codecStrPrint = "Ut Video";
-                else if (codecStr == "CVID" || codecStr == "cvid") codecStrPrint = "Cinepak";
-                else if (codecStr == "IV32" || codecStr == "iv32") codecStrPrint = "Intel Indeo 3.2";
-                else if (codecStr == "IV41" || codecStr == "iv41") codecStrPrint = "Intel Indeo 4.1";
-                else if (codecStr == "IV50" || codecStr == "iv50") codecStrPrint = "Intel Indeo 5.0";
-                else if (codecStr == "QTRP" || codecStr == "qtrp") codecStrPrint = "QuickTime RPZA";
-                else if (codecStr == "SMC" || codecStr == "smc") codecStrPrint = "QuickTime SMC";
-                else {
-                    std::string ext = FinalName.substr(NameIndex + 1);
-                    if (ext == "mp4" || ext == "m4v") codecStrPrint = "H.264/AVC (MP4)";
-                    if (ext == "avi") codecStrPrint = "AVI (DivX/Xvid/MPEG-4)";
-                    if (ext == "mkv") codecStrPrint = "MKV (different)";
-                    if (ext == "mov") codecStrPrint = "QuickTime (H.264/ProRes)";
-                    if (ext == "wmv") codecStrPrint = "Windows Media Video";
-                    if (ext == "flv") codecStrPrint = "Flash Video";
-                    if (ext == "webm") codecStrPrint = "WebM (VP8/VP9)";
-                }
-            }
-            else {
-                std::string ConvertedFinalString = OldName.substr(OldName.find_last_of("\\/") + 1);
-                std::string ext = OldName.substr(OldName.find_last_of(".") + 1);
-                if (ext == "mp4" || ext == "m4v") codecStrPrint = "H.264/AVC (MP4)";
-                if (ext == "avi") codecStrPrint = "AVI (DivX/Xvid/MPEG-4)";
-                if (ext == "mkv") codecStrPrint = "MKV (разный)";
-                if (ext == "mov") codecStrPrint = "QuickTime (H.264/ProRes)";
-                if (ext == "wmv") codecStrPrint = "Windows Media Video";
-                if (ext == "flv") codecStrPrint = "Flash Video";
-                if (ext == "webm") codecStrPrint = "WebM (VP8/VP9)";
-            }
-            cv::putText(result, "Codec: " + codecStrPrint,
-                cv::Point((windowSize.width) / 4 + 40, (windowSize.height) / 4 + 260),
-                fontFace, 0.6,
-                cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-            
-            if (bytes < 1024) {
-                cv::putText(result, std::to_string(bytes),
-                    cv::Point((windowSize.width) / 4 + 40, (windowSize.height) / 4 + 295),
-                    fontFace, 0.6, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-            }
-            else if (bytes > 1024 && bytes < 1024 * 1024) {
-                double kb = bytes / 1024.0;
-                char sizeText[32];
-                sprintf(sizeText, "Video size: %.2f KB", kb);
-                cv::putText(result, sizeText,
-                    cv::Point((windowSize.width) / 4 + 40, (windowSize.height) / 4 + 295),
-                    fontFace, 0.6, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-            }
-            else if (bytes >= 1024 * 1024 && bytes < 1024 * 1024 * 1024) {
-                double mb = bytes / (1024.0 * 1024.0);
-                char sizeText[32];
-                sprintf(sizeText, "Video size: %.2f MB", mb);
-                cv::putText(result, sizeText,
-                    cv::Point((windowSize.width) / 4 + 40, (windowSize.height) / 4 + 295),
-                    fontFace, 0.6, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-            }
-            else if (bytes >= 1024 * 1024 * 1024) {
-                double gb = bytes / (1024.0 * 1024.0 * 1024.0);
-                char sizeText[32];
-                sprintf(sizeText, "Video size: %.2f GB", gb);
-                cv::putText(result, sizeText,
-                    cv::Point((windowSize.width) / 4 + 40, (windowSize.height) / 4 + 295),
-                    fontFace, 0.6, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-            }
-            int IndexOfDot = Name.find_last_of("\\/") + 1;
-            cv::putText(result, "File location: " + Name.substr(0, IndexOfDot),
-                cv::Point((windowSize.width) / 4 + 40, (windowSize.height) / 4 + 330),
-                fontFace, 0.6,
-                cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-
-            cv::putText(result, "Exit",
-                cv::Point((windowSize.width) / 2 + 262, (((windowSize.height) / 4) * 3) - 35),
-                fontFace, 0.6,
-                cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-            if (mousePos.x > (windowSize.width) / 2 + 215 && mousePos.x < (windowSize.width) / 2 + 230 + 115 && mousePos.y < (((windowSize.height) / 4) * 3) - 15 && mousePos.y > (((windowSize.height) / 4) * 3) - 60) {
+            std::string sizeText = GetSize(bytes);
+            std::string codecStrPrint = GetCodec(codecStr,FinalName,OldName);
+            if (mousePos.x > (windowSize.width) / 2 + 215 && mousePos.x < (windowSize.width) / 2 + 230 + 115 && mousePos.y < (((windowSize.height) / 4) * 3) - 15 && mousePos.y >(((windowSize.height) / 4) * 3) - 60) {
                 DrawSpecificFigure FeaturesBGExit((windowSize.width) / 2 + 230, (((windowSize.height) / 4) * 3) - 50, 100, 20);
                 FeaturesBGExit.DrawRoundedRectangle(result, cv::Scalar(50, 50, 50), 10);
-                cv::putText(result, "Exit",
-                    cv::Point((windowSize.width) / 2 + 262, (((windowSize.height) / 4) * 3) - 35),
-                    fontFace, 0.6,
-                    cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
             }
             if (mouseClicked && (mousePos.x > (windowSize.width) / 2 + 215 && mousePos.x < (windowSize.width) / 2 + 230 + 115 && mousePos.y < (((windowSize.height) / 4) * 3) - 15 && mousePos.y >(((windowSize.height) / 4) * 3) - 60)) {
                 mouseClicked = !mouseClicked;
                 featuresActive = false;
             }
+            FeaturesDraw(result, windowSize, FinalName, OldName, totalTimeStringMinutes, totalTimeStringSeconds, videoW, videoH, fps, codecStrPrint, sizeText);
         }
 
         //Кнопка скриншота
