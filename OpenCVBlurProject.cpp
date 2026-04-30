@@ -42,6 +42,34 @@ int SleepTimer = 0;
 bool IsSleep = false;
 auto startTimer = std::chrono::steady_clock::now();
 
+class DrawSpecificFigure
+{
+private:
+    int x;
+    int y;
+    int width;
+    int height;
+public:
+    DrawSpecificFigure(int x, int y, int width, int height) :
+        x(x), y(y), width(width), height(height) {
+    }
+    void DrawRoundedRectangle(cv::Mat& img, const cv::Scalar& figureColor, int radius) {
+        if (radius <= 0) {
+            cv::rectangle(img, cv::Point(x, y), cv::Point(x + width, y + height),
+                figureColor, -1, cv::LINE_AA);
+        }
+        else {
+            cv::rectangle(img, cv::Point(x, y - radius), cv::Point(x + width, y + height + radius),
+                figureColor, -1, cv::LINE_AA);
+            cv::rectangle(img, cv::Point(x - radius, y), cv::Point(x + width + radius, y + height),
+                figureColor, -1, cv::LINE_AA);
+            cv::ellipse(img, cv::Point(x, y), cv::Size(radius, radius), 0, 180, 270, figureColor, -1, cv::LINE_AA);
+            cv::ellipse(img, cv::Point(x + width, y), cv::Size(radius, radius), 0, 270, 360, figureColor, -1, cv::LINE_AA);
+            cv::ellipse(img, cv::Point(x + width, y + height), cv::Size(radius, radius), 0, 0, 90, figureColor, -1, cv::LINE_AA);
+            cv::ellipse(img, cv::Point(x, y + height), cv::Size(radius, radius), 0, 90, 180, figureColor, -1, cv::LINE_AA);
+        }
+    }
+};
 // обработчик нажатия ЛКМ
 void onMouse(int event, int x, int y, int, void*) {
     mousePos = cv::Point(x, y);
@@ -219,87 +247,95 @@ std::string GetSize(long long bytes) {
 
 void FeaturesDraw(cv::Mat& resultWin, cv::Rect& sizeOfWindow, std::string VideoName, std::string OldVideoName, std::string Minutes, std::string Seconds, int WindowWidth, int WindowHeight, double fps, std::string codecStr, std::string sizeText) {
     int NameIndex = VideoName.find_last_of(".");
+    int InfoY = (sizeOfWindow.height) / 4;
+    int InfoX = (sizeOfWindow.width) / 4 + 40;
     cv::putText(resultWin, "Features",
-        cv::Point((sizeOfWindow.width) / 4 + 40, (sizeOfWindow.height) / 4 + 40),
+        cv::Point(InfoX, InfoY + 40),
         fontFace, 1.0,
         cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
     cv::putText(resultWin, "Name: " + VideoName.substr(0, NameIndex),
-        cv::Point((sizeOfWindow.width) / 4 + 40, (sizeOfWindow.height) / 4 + 85),
+        cv::Point(InfoX, InfoY + 85),
         fontFace, 0.6,
         cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
     cv::putText(resultWin, "Duration: " + Minutes + ":" + Seconds,
-        cv::Point((sizeOfWindow.width) / 4 + 40, (sizeOfWindow.height) / 4 + 120),
+        cv::Point(InfoX, InfoY + 120),
         fontFace, 0.6,
         cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
     if (converted == false) {
         cv::putText(resultWin, "Video format: " + VideoName.substr(NameIndex),
-            cv::Point((sizeOfWindow.width) / 4 + 40, (sizeOfWindow.height) / 4 + 155),
+            cv::Point(InfoX, InfoY + 155),
             fontFace, 0.6,
             cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
     }
     else {
         cv::putText(resultWin, "Video format: " + OldVideoName.substr(OldVideoName.find_last_of(".")),
-            cv::Point((sizeOfWindow.width) / 4 + 40, (sizeOfWindow.height) / 4 + 155),
+            cv::Point(InfoX, InfoY + 155),
             fontFace, 0.6,
             cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
     }
     std::string videoResolutionX = std::to_string(WindowWidth);
     std::string videoResolutionY = std::to_string(WindowHeight);
     cv::putText(resultWin, "Video resolution: " + videoResolutionX + "x" + videoResolutionY,
-        cv::Point((sizeOfWindow.width) / 4 + 40, (sizeOfWindow.height) / 4 + 190),
+        cv::Point(InfoX, InfoY + 190),
         fontFace, 0.6,
         cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
     std::string videoFPSstring = std::to_string((int)fps);
     cv::putText(resultWin, "Frame rate: " + videoFPSstring,
-        cv::Point((sizeOfWindow.width) / 4 + 40, (sizeOfWindow.height) / 4 + 225),
+        cv::Point(InfoX, InfoY + 225),
         fontFace, 0.6,
         cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
     int IndexOfDot = Name.find_last_of("\\/") + 1;
     cv::putText(resultWin, "File location: " + Name.substr(0, IndexOfDot),
-        cv::Point((sizeOfWindow.width) / 4 + 40, (sizeOfWindow.height) / 4 + 330),
+        cv::Point(InfoX, InfoY + 330),
         fontFace, 0.6,
         cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
     cv::putText(resultWin, "Codec: " + codecStr,
-        cv::Point((sizeOfWindow.width) / 4 + 40, (sizeOfWindow.height) / 4 + 260),
+        cv::Point(InfoX, InfoY + 260),
         fontFace, 0.6,
         cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
     cv::putText(resultWin, sizeText,
-        cv::Point((sizeOfWindow.width) / 4 + 40, (sizeOfWindow.height) / 4 + 295),
+        cv::Point(InfoX, InfoY + 295),
         fontFace, 0.6, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
     cv::putText(resultWin, "Exit",
-        cv::Point((sizeOfWindow.width) / 2 + 262, (((sizeOfWindow.height) / 4) * 3) - 35),
+        cv::Point((sizeOfWindow.width) / 2 + 262, (InfoY * 3) - 35),
         fontFace, 0.6,
         cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
 }
-//Класс рисования специфических фигур
-class DrawSpecificFigure
-{
-    private:
-        int x;
-        int y;
-        int width;
-        int height;
-    public:
-        DrawSpecificFigure(int x, int y, int width, int height):
-            x(x), y(y), width(width), height(height) {
-        }
-        void DrawRoundedRectangle(cv::Mat& img, const cv::Scalar& figureColor, int radius) {
-            if (radius <= 0) {
-                cv::rectangle(img, cv::Point(x, y), cv::Point(x + width, y + height),
-                    figureColor, -1, cv::LINE_AA);
-            }
-            else {
-                cv::rectangle(img, cv::Point(x, y - radius), cv::Point(x + width, y + height + radius),
-                    figureColor, -1, cv::LINE_AA);
-                cv::rectangle(img, cv::Point(x - radius, y), cv::Point(x + width + radius, y + height),
-                    figureColor, -1, cv::LINE_AA);
-                cv::ellipse(img, cv::Point(x, y), cv::Size(radius, radius), 0, 180, 270, figureColor, -1, cv::LINE_AA);
-                cv::ellipse(img, cv::Point(x + width, y), cv::Size(radius, radius), 0, 270, 360, figureColor, -1, cv::LINE_AA);
-                cv::ellipse(img, cv::Point(x + width, y + height), cv::Size(radius, radius), 0, 0, 90, figureColor, -1, cv::LINE_AA);
-                cv::ellipse(img, cv::Point(x, y + height), cv::Size(radius, radius), 0, 90, 180, figureColor, -1, cv::LINE_AA);
-            }
-        }
-};
+
+void DrawSceenshotButton(cv::Mat& resultWin, cv::Rect& sizeOfWindow, cv::Mat& frame) {
+    int buttonXCamera = sizeOfWindow.width / 2 - 285;
+    int buttonYCamera = sizeOfWindow.height - 40;
+    int dxCamera = mousePos.x - (buttonXCamera + 5);
+    int dyCamera = mousePos.y - (buttonYCamera - 7);
+    int camX = buttonXCamera;
+    int camY = buttonYCamera;
+
+    // Корпус
+    DrawSpecificFigure Camera(buttonXCamera - 10, buttonYCamera - 10, 20, 10);
+    Camera.DrawRoundedRectangle(resultWin, UI_COLOR, 2);
+    DrawSpecificFigure CameraUp(buttonXCamera - 3, buttonYCamera - 13, 6, 3);
+    CameraUp.DrawRoundedRectangle(resultWin, UI_COLOR, 1);
+
+    // Объектив
+    cv::circle(resultWin, cv::Point(buttonXCamera, buttonYCamera - 5), 5,
+        cv::Scalar(0, 0, 0), 1, cv::LINE_AA);
+
+    //Вспышка
+    cv::rectangle(resultWin,
+        cv::Point(buttonXCamera + 7, buttonYCamera - 8),
+        cv::Point(buttonXCamera + 10, buttonYCamera - 10),
+        cv::Scalar(0, 0, 0), -1, cv::LINE_AA);
+
+    float distanceCamera = std::sqrt(dxCamera * dxCamera + dyCamera * dyCamera);
+
+    if (mouseClicked && distanceCamera <= 20) {
+        GetScreen(frame);
+        mouseClicked = false;
+    }
+    else if (distanceCamera <= 20) {
+        cv::circle(resultWin, cv::Point(buttonXCamera, sizeOfWindow.height - 45), 20, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+    }
+}
 
 int main(int argc, char* argv[]) {
     setlocale(LC_ALL, "Rus");
@@ -531,83 +567,10 @@ int main(int argc, char* argv[]) {
 
         //Кнопка скриншота
         if (IsSleep == false) {
-            int buttonXCamera = windowSize.width / 2 - 285;
-            int buttonYCamera = windowSize.height - 40;
-            int dxCamera = mousePos.x - (buttonXCamera + 5);
-            int dyCamera = mousePos.y - (buttonYCamera - 7);
-            int camX = buttonXCamera;
-            int camY = buttonYCamera;
-
-            // Корпус
-            DrawSpecificFigure Camera(buttonXCamera - 10, buttonYCamera - 10, 20, 10);
-            Camera.DrawRoundedRectangle(result, UI_COLOR, 2);
-            DrawSpecificFigure CameraUp(buttonXCamera - 3, buttonYCamera - 13, 6, 3);
-            CameraUp.DrawRoundedRectangle(result, UI_COLOR, 1);
-
-            // Объектив
-            cv::circle(result, cv::Point(buttonXCamera, buttonYCamera - 5), 5,
-                cv::Scalar(0, 0, 0), 1, cv::LINE_AA);
-
-            //Вспышка
-            cv::rectangle(result,
-                cv::Point(buttonXCamera + 7, buttonYCamera - 8),
-                cv::Point(buttonXCamera + 10, buttonYCamera - 10),
-                cv::Scalar(0, 0, 0), -1, cv::LINE_AA);
-
-            float distanceCamera = std::sqrt(dxCamera * dxCamera + dyCamera * dyCamera);
-
-            if (mouseClicked && distanceCamera <= 20) {
-                GetScreen(frame);
-                mouseClicked = false;
-            }
-            else if (distanceCamera <= 20) {
-                cv::circle(result, cv::Point(buttonXCamera, windowSize.height - 45), 20, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-            }
+         DrawSceenshotButton(result, windowSize, frame);  
         }
         
-        //Время видео
-        int TimeCenterX = windowSize.width - 150;
-        int TimeCenterY = windowSize.height - 40;
-        if (mouseClicked && (mousePos.x > TimeCenterX+0 && mousePos.x < TimeCenterX + TimeStringLenght) && (mousePos.y > TimeCenterY - 10 && mousePos.y < TimeCenterY + 10)) {
-            CurrentTime = !CurrentTime;
-            mouseClicked = false;
-        }
-        if (CurrentTime == true) {
-            cv::putText(result, currentTimeStringMinutes + ":" + currentTimeStringSeconds + "/" + totalTimeStringMinutes + ":" + totalTimeStringSeconds,
-                cv::Point( TimeCenterX, windowSize.height - 40),
-                fontFace, 0.7,
-                cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-        }
-        else {
-            cv::putText(result, "-" + remainingTimeMinutesString + ":" + remainingTimeSecondsString + "/" + totalTimeStringMinutes + ":" + totalTimeStringSeconds,
-                cv::Point(TimeCenterX, windowSize.height - 40),
-                fontFace, 0.7,
-                cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-        }
-        if (CurrentTime == true) {
-            TimeStringLenght = 60;
-        }
-        if (CurrentTime == true && currentTimeSeconds >= 10) {
-            TimeStringLenght = 70;
-        }
-        if (CurrentTime == true && currentTimeMinutes >= 10) {
-            TimeStringLenght = 70;
-        }
-        if (CurrentTime == true && currentTimeMinutes >= 10 && currentTimeSeconds >= 10) {
-            TimeStringLenght = 80;
-        }
-        if (CurrentTime == false) {
-            TimeStringLenght = 80;
-        }
-        if (CurrentTime == false && remainingTimeMinutes >= 10) {
-            TimeStringLenght = 90;
-        }
-        if (CurrentTime == false && remainingTimeSeconds >= 10) {
-            TimeStringLenght = 90;
-        }
-        if (CurrentTime == false && remainingTimeSeconds >= 10 && remainingTimeMinutes >= 10) {
-            TimeStringLenght = 100;
-        }
+       
         if (IsSleep == false) {
             //Отрисовка шкалы прогресса
             int barY = windowSize.height - 84;
@@ -997,6 +960,49 @@ int main(int argc, char* argv[]) {
                 mouseClicked = false;
                 is_silent = false;
             }
+        }
+        //Время видео
+        int TimeCenterX = windowSize.width - 150;
+        int TimeCenterY = windowSize.height - 40;
+        if (mouseClicked && (mousePos.x > TimeCenterX+0 && mousePos.x < TimeCenterX + TimeStringLenght) && (mousePos.y > TimeCenterY - 10 && mousePos.y < TimeCenterY + 10)) {
+            CurrentTime = !CurrentTime;
+            mouseClicked = false;
+        }
+        if (CurrentTime == true) {
+            cv::putText(result, currentTimeStringMinutes + ":" + currentTimeStringSeconds + "/" + totalTimeStringMinutes + ":" + totalTimeStringSeconds,
+                cv::Point( TimeCenterX, windowSize.height - 40),
+                fontFace, 0.7,
+                cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+        }
+        else {
+            cv::putText(result, "-" + remainingTimeMinutesString + ":" + remainingTimeSecondsString + "/" + totalTimeStringMinutes + ":" + totalTimeStringSeconds,
+                cv::Point(TimeCenterX, windowSize.height - 40),
+                fontFace, 0.7,
+                cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+        }
+        if (CurrentTime == true) {
+            TimeStringLenght = 60;
+        }
+        if (CurrentTime == true && currentTimeSeconds >= 10) {
+            TimeStringLenght = 70;
+        }
+        if (CurrentTime == true && currentTimeMinutes >= 10) {
+            TimeStringLenght = 70;
+        }
+        if (CurrentTime == true && currentTimeMinutes >= 10 && currentTimeSeconds >= 10) {
+            TimeStringLenght = 80;
+        }
+        if (CurrentTime == false) {
+            TimeStringLenght = 80;
+        }
+        if (CurrentTime == false && remainingTimeMinutes >= 10) {
+            TimeStringLenght = 90;
+        }
+        if (CurrentTime == false && remainingTimeSeconds >= 10) {
+            TimeStringLenght = 90;
+        }
+        if (CurrentTime == false && remainingTimeSeconds >= 10 && remainingTimeMinutes >= 10) {
+            TimeStringLenght = 100;
         }
         ma_sound_set_volume(&audioSound, volume);
 
