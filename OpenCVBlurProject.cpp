@@ -70,6 +70,73 @@ public:
         }
     }
 };
+//DrawInterface(windowSize.width / 2, windowSize.height - 55;)
+class DrawInterface
+{
+private:
+    int Xposition;
+    int Yposition;
+    cv::VideoCapture& cap;
+public:
+    DrawInterface(int Xposition, int Yposition, cv::VideoCapture& cap) :
+        Xposition(Xposition), Yposition(Yposition), cap(cap) {
+       
+    }
+    void ButtonReload(bool direction, cv::Mat& resultWin) {
+        const int BUTTON_DIFFERENCE = 210;
+        if (direction == 0) {
+            int ButtonPosX = Xposition - BUTTON_DIFFERENCE;
+            int ButtonPosY = Yposition;
+            cv::rectangle(resultWin,
+                cv::Point(ButtonPosX + 1, ButtonPosY + 2.5),
+                cv::Point(ButtonPosX + 4, ButtonPosY + 17.5),
+                cv::Scalar(UI_COLOR), -1, cv::LINE_AA);
+            cv::Point triangle[3];
+            triangle[0] = cv::Point(ButtonPosX + 18, ButtonPosY + 2.5);
+            triangle[1] = cv::Point(ButtonPosX + 18, ButtonPosY + 17.5);
+            triangle[2] = cv::Point(ButtonPosX + 6, ButtonPosY + 10);
+            cv::fillConvexPoly(resultWin, triangle, 3,
+                cv::Scalar(UI_COLOR), cv::LINE_AA);
+            int dx = mousePos.x - (ButtonPosX + 10);
+            int dy = mousePos.y - (ButtonPosY + 10);
+            float distance = std::sqrt(dx * dx + dy * dy);
+            if (mouseClicked && distance <= 20) {
+                cap.set(cv::CAP_PROP_POS_FRAMES, 0);
+                if (audioInitialized) ma_sound_seek_to_second(&audioSound, 0);
+                mouseClicked = false;
+            }
+            else if (distance <= 20) {
+                cv::circle(resultWin, cv::Point(ButtonPosX + 10, ButtonPosY + 10), 20,
+                    cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+            }
+        }
+        else{
+            int ButtonPosX = Xposition + BUTTON_DIFFERENCE;
+            int ButtonPosY = Yposition;
+            cv::rectangle(resultWin,
+                cv::Point(ButtonPosX - 4, ButtonPosY + 2.5),
+                cv::Point(ButtonPosX - 1, ButtonPosY + 17.5),
+                cv::Scalar(UI_COLOR), -1, cv::LINE_AA);
+            cv::Point triangleE[3];
+            triangleE[0] = cv::Point(ButtonPosX - 18, ButtonPosY + 2.5);
+            triangleE[1] = cv::Point(ButtonPosX - 18, ButtonPosY + 17.5);
+            triangleE[2] = cv::Point(ButtonPosX - 6, ButtonPosY + 10);
+            cv::fillConvexPoly(resultWin, triangleE, 3, cv::Scalar(UI_COLOR), cv::LINE_AA);
+            int dx = mousePos.x - (ButtonPosX - 10);
+            int dy = mousePos.y - (ButtonPosY + 10);
+            float distance = std::sqrt(dx * dx + dy * dy);
+            if (mouseClicked && distance <= 20) {
+                cap.set(cv::CAP_PROP_POS_FRAMES, 0);
+                if (audioInitialized) ma_sound_seek_to_second(&audioSound, 0);
+                mouseClicked = false;
+            }
+            else if (distance <= 20) {
+                cv::circle(resultWin, cv::Point(ButtonPosX - 10, ButtonPosY + 10), 20,
+                    cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+            }
+        }
+    }
+};
 // обработчик нажатия ЛКМ
 void onMouse(int event, int x, int y, int, void*) {
     mousePos = cv::Point(x, y);
@@ -144,7 +211,7 @@ void SetIcon(const std::string& WindowName,const std::string& IconFileName) {
     }
 }
 
-void InfoDraw(cv::Mat& resultWin, cv::Rect& sizeOfWindow) {
+void InfoDraw(cv::Mat& resultWin, const cv::Rect& sizeOfWindow) {
     int btnX = sizeOfWindow.width / 2 - 370;
     int btnY = sizeOfWindow.height - 37.5;
     cv::putText(resultWin, "i",
@@ -245,7 +312,7 @@ std::string GetSize(long long bytes) {
     return std::string(sizeText);
 }
 
-void FeaturesDraw(cv::Mat& resultWin, cv::Rect& sizeOfWindow, std::string VideoName, std::string OldVideoName, std::string Minutes, std::string Seconds, int WindowWidth, int WindowHeight, double fps, std::string codecStr, std::string sizeText) {
+void FeaturesDraw(cv::Mat& resultWin, const cv::Rect& sizeOfWindow, std::string VideoName, std::string OldVideoName, std::string Minutes, std::string Seconds, int WindowWidth, int WindowHeight, double fps, std::string codecStr, std::string sizeText) {
     int NameIndex = VideoName.find_last_of(".");
     int InfoY = (sizeOfWindow.height) / 4;
     int InfoX = (sizeOfWindow.width) / 4 + 40;
@@ -302,31 +369,26 @@ void FeaturesDraw(cv::Mat& resultWin, cv::Rect& sizeOfWindow, std::string VideoN
         cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
 }
 
-void DrawSceenshotButton(cv::Mat& resultWin, cv::Rect& sizeOfWindow, cv::Mat& frame) {
+void DrawScreenshotButton(cv::Mat& resultWin, const cv::Rect& sizeOfWindow, cv::Mat& frame) {
     int buttonXCamera = sizeOfWindow.width / 2 - 285;
     int buttonYCamera = sizeOfWindow.height - 40;
-    int dxCamera = mousePos.x - (buttonXCamera + 5);
-    int dyCamera = mousePos.y - (buttonYCamera - 7);
-    int camX = buttonXCamera;
-    int camY = buttonYCamera;
+    int dx = mousePos.x - (buttonXCamera + 5);
+    int dy = mousePos.y - (buttonYCamera - 7);
+    float distanceCamera = std::hypot(dx, dy);
 
     // Корпус
     DrawSpecificFigure Camera(buttonXCamera - 10, buttonYCamera - 10, 20, 10);
     Camera.DrawRoundedRectangle(resultWin, UI_COLOR, 2);
     DrawSpecificFigure CameraUp(buttonXCamera - 3, buttonYCamera - 13, 6, 3);
     CameraUp.DrawRoundedRectangle(resultWin, UI_COLOR, 1);
-
     // Объектив
     cv::circle(resultWin, cv::Point(buttonXCamera, buttonYCamera - 5), 5,
         cv::Scalar(0, 0, 0), 1, cv::LINE_AA);
-
     //Вспышка
     cv::rectangle(resultWin,
         cv::Point(buttonXCamera + 7, buttonYCamera - 8),
         cv::Point(buttonXCamera + 10, buttonYCamera - 10),
         cv::Scalar(0, 0, 0), -1, cv::LINE_AA);
-
-    float distanceCamera = std::sqrt(dxCamera * dxCamera + dyCamera * dyCamera);
 
     if (mouseClicked && distanceCamera <= 20) {
         GetScreen(frame);
@@ -334,6 +396,36 @@ void DrawSceenshotButton(cv::Mat& resultWin, cv::Rect& sizeOfWindow, cv::Mat& fr
     }
     else if (distanceCamera <= 20) {
         cv::circle(resultWin, cv::Point(buttonXCamera, sizeOfWindow.height - 45), 20, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+    }
+}
+
+void DrawProgressBar(cv::Mat& resultWin, const cv::Rect& sizeOfWindow, const int currentFrame, const int totalFrames, int fps, cv::VideoCapture& cap) {
+    int barY = sizeOfWindow.height - 84;
+    int barX = 50;
+    int barWidth = sizeOfWindow.width - 100;
+    int barHeight = 6;
+    int handleRadius = 5;
+    bool isOverBar = (mousePos.y > barY - barHeight - 5 && mousePos.y < barY + 5 && mousePos.x > barX && mousePos.x < barX + barWidth);
+    cv::rectangle(resultWin,
+        cv::Point(barX, barY - barHeight / 2),
+        cv::Point(barX + barWidth, barY + barHeight / 2),
+        cv::Scalar(60, 60, 60), -1);
+    int progressWidth = (int)((currentFrame / (double)totalFrames) * barWidth);
+    cv::rectangle(resultWin,
+        cv::Point(barX, barY - barHeight / 2),
+        cv::Point(barX + progressWidth, barY + barHeight / 2),
+        cv::Scalar(UI_COLOR), -1);
+    int circlePosX = (int)progressWidth + barX;
+    cv::circle(resultWin, cv::Point(circlePosX, barY), handleRadius, cv::Scalar(UI_COLOR), -1, cv::LINE_AA);
+    if (mouseClicked && isOverBar && SpeedMenuActive == false)
+    {
+        float clickPercent = (mousePos.x - barX) / (float)barWidth;
+        int newFrame = std::clamp((int)(totalFrames * clickPercent), 0, totalFrames - 1);
+        cap.set(cv::CAP_PROP_POS_FRAMES, newFrame);
+        if (audioInitialized) {
+            ma_sound_seek_to_second(&audioSound, newFrame / fps);
+        }
+        mouseClicked = false;
     }
 }
 
@@ -567,71 +659,20 @@ int main(int argc, char* argv[]) {
 
         //Кнопка скриншота
         if (IsSleep == false) {
-         DrawSceenshotButton(result, windowSize, frame);  
+            DrawScreenshotButton(result, windowSize, frame);  
         }
         
-       
         if (IsSleep == false) {
-            //Отрисовка шкалы прогресса
-            int barY = windowSize.height - 84;
-            int barX = 50;
-            int barWidth = windowSize.width - 100;
-            int barHeight = 6;
-            cv::rectangle(result,
-                cv::Point(barX, barY - barHeight / 2),
-                cv::Point(barX + barWidth, barY + barHeight / 2),
-                cv::Scalar(60, 60, 60), -1);
-            int progressWidth = (int)((currentFrame / (double)totalFrames) * barWidth);
-            cv::rectangle(result,
-                cv::Point(barX, barY - barHeight / 2),
-                cv::Point(barX + progressWidth, barY + barHeight / 2),
-                cv::Scalar(UI_COLOR), -1);
-            int circlePosX = (int)progressWidth + barX;
-            cv::circle(result, cv::Point(circlePosX, barY), 5, cv::Scalar(UI_COLOR), -1, cv::LINE_AA);
-            if (mouseClicked &&
-                mousePos.y > barY - barHeight - 5 && mousePos.y < barY + 5 &&
-                mousePos.x > barX && mousePos.x < barX + barWidth && SpeedMenuActive == false) {
-                float clickPercent = (mousePos.x - barX) / (float)barWidth;
-                int newFrame = (int)(totalFrames * clickPercent);
-                cap.set(cv::CAP_PROP_POS_FRAMES, newFrame);
-                if (audioInitialized) {
-                    ma_sound_seek_to_second(&audioSound, newFrame / fps);
-                }
-                mouseClicked = false;
-            }
+            DrawProgressBar(result, windowSize, currentFrame, totalFrames, fps, cap);
         }
 
         // ОТРИСОВКА ИНТЕРФЕЙСА
         if (IsSleep == false) {
+            DrawInterface Interface(windowSize.width / 2, windowSize.height - 55, cap);
             // Кнопка возврата в начало
-            int buttonXReload = windowSize.width / 2 - 210;
-            int buttonYReload = windowSize.height - 55;
-            int dxr = mousePos.x - (buttonXReload + 10);
-            int dyr = mousePos.y - (buttonYReload + 10);
-            float distanceR = std::sqrt(dxr * dxr + dyr * dyr);
-
-            if (mouseClicked && distanceR <= 20) {
-                cap.set(cv::CAP_PROP_POS_FRAMES, 0);
-                if (audioInitialized) ma_sound_seek_to_second(&audioSound, 0);
-                mouseClicked = false;
-            }
-            else if (distanceR <= 20) {
-                cv::circle(result, cv::Point(windowSize.width / 2 - 200, windowSize.height - 45), 20,
-                    cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-            }
-
-            cv::rectangle(result,
-                cv::Point(buttonXReload + 1, buttonYReload + 2.5),
-                cv::Point(buttonXReload + 4, buttonYReload + 17.5),
-                cv::Scalar(UI_COLOR), -1, cv::LINE_AA);
-
-            cv::Point triangleR[3];
-            triangleR[0] = cv::Point(buttonXReload + 18, buttonYReload + 2.5);
-            triangleR[1] = cv::Point(buttonXReload + 18, buttonYReload + 17.5);
-            triangleR[2] = cv::Point(buttonXReload + 6, buttonYReload + 10);
-            cv::fillConvexPoly(result, triangleR, 3,
-                cv::Scalar(UI_COLOR), cv::LINE_AA);
-
+            Interface.ButtonReload(0, result);
+            //Кнопка перемотки в конец
+            Interface.ButtonReload(1, result);
             // Кнопка перемотки назад
             int buttonXBack = windowSize.width / 2 - 110;
             int buttonYBack = windowSize.height - 55;
@@ -737,36 +778,6 @@ int main(int argc, char* argv[]) {
             triangleFor2[1] = cv::Point(buttonXFor - 20, buttonYFor + 17.5);
             triangleFor2[2] = cv::Point(buttonXFor - 8, buttonYFor + 10);
             cv::fillConvexPoly(result, triangleFor2, 3, cv::Scalar(UI_COLOR), cv::LINE_AA);
-
-            // Кнопка перемотки в конец
-            int buttonXEnd = windowSize.width / 2 + 210;
-            int buttonYEnd = windowSize.height - 55;
-            int dxEnd = mousePos.x - (buttonXEnd - 10);
-            int dyEnd = mousePos.y - (buttonYEnd + 10);
-            float distanceEnd = std::sqrt(dxEnd * dxEnd + dyEnd * dyEnd);
-
-            if (mouseClicked && distanceEnd <= 20) {
-                cap.set(cv::CAP_PROP_POS_FRAMES, totalFrames - 1);
-                if (audioInitialized) ma_sound_seek_to_second(&audioSound, totalFrames / fps);
-                mouseClicked = false;
-            }
-            else if (distanceEnd <= 20) {
-                cv::circle(result, cv::Point(windowSize.width / 2 + 200, windowSize.height - 45), 20,
-                    cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-            }
-
-            cv::rectangle(result,
-                cv::Point(buttonXEnd - 4, buttonYEnd + 2.5),
-                cv::Point(buttonXEnd - 1, buttonYEnd + 17.5),
-                cv::Scalar(UI_COLOR), -1, cv::LINE_AA);
-
-            cv::Point triangleE[3];
-            triangleE[0] = cv::Point(buttonXEnd - 18, buttonYEnd + 2.5);
-            triangleE[1] = cv::Point(buttonXEnd - 18, buttonYEnd + 17.5);
-            triangleE[2] = cv::Point(buttonXEnd - 6, buttonYEnd + 10);
-            cv::fillConvexPoly(result, triangleE, 3, cv::Scalar(UI_COLOR), cv::LINE_AA);
-
-
 
             // Кнопка скорости
             int buttonXSpeed = windowSize.width / 2 + 300;
@@ -1013,14 +1024,12 @@ int main(int argc, char* argv[]) {
         auto elapsedTimer = std::chrono::duration_cast<std::chrono::milliseconds>(nowTimer - startTimer).count();
         if (oldMousePos != mousePos || mouseClicked) {
             startTimer = nowTimer;
-            IsSleep = false;
-            
+            IsSleep = false; 
         }
         
         oldMousePos = mousePos;
         if (elapsedTimer >= 10000) {
             IsSleep = true;
-            
         }
         else {
             IsSleep = false;
