@@ -70,7 +70,7 @@ public:
         }
     }
 };
-//DrawInterface(windowSize.width / 2, windowSize.height - 55;)
+
 class DrawInterface
 {
 private:
@@ -82,10 +82,10 @@ public:
         Xposition(Xposition), Yposition(Yposition), cap(cap) {
        
     }
-    void ButtonReload(bool direction, cv::Mat& resultWin) {
-        const int BUTTON_DIFFERENCE = 210;
+    void ReloadButton(bool direction, cv::Mat& resultWin) {
+        const int CENTER_DISTANCE = 210;
         if (direction == 0) {
-            int ButtonPosX = Xposition - BUTTON_DIFFERENCE;
+            int ButtonPosX = Xposition - CENTER_DISTANCE;
             int ButtonPosY = Yposition;
             cv::rectangle(resultWin,
                 cv::Point(ButtonPosX + 1, ButtonPosY + 2.5),
@@ -111,7 +111,7 @@ public:
             }
         }
         else{
-            int ButtonPosX = Xposition + BUTTON_DIFFERENCE;
+            int ButtonPosX = Xposition + CENTER_DISTANCE;
             int ButtonPosY = Yposition;
             cv::rectangle(resultWin,
                 cv::Point(ButtonPosX - 4, ButtonPosY + 2.5),
@@ -134,6 +134,106 @@ public:
                 cv::circle(resultWin, cv::Point(ButtonPosX - 10, ButtonPosY + 10), 20,
                     cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
             }
+        }
+    }
+    void RewindButton(bool direction, cv::Mat& resultWin, const int currentFrame, const int framesIn10Seconds, double fps) {
+        const int CENTER_DISTANCE = 110;
+        if (direction == 0) {
+            int ButtonPosX = Xposition - CENTER_DISTANCE;
+            int ButtonPosY = Yposition;
+            cv::Point triangleBack[3];
+            triangleBack[0] = cv::Point(ButtonPosX + 20, ButtonPosY + 2.5);
+            triangleBack[1] = cv::Point(ButtonPosX + 20, ButtonPosY + 17.5);
+            triangleBack[2] = cv::Point(ButtonPosX + 8, ButtonPosY + 10);
+            cv::fillConvexPoly(resultWin, triangleBack, 3, cv::Scalar(UI_COLOR), cv::LINE_AA);
+            cv::Point triangleBack2[3];
+            triangleBack2[0] = cv::Point(ButtonPosX + 8, ButtonPosY + 2.5);
+            triangleBack2[1] = cv::Point(ButtonPosX + 8, ButtonPosY + 17.5);
+            triangleBack2[2] = cv::Point(ButtonPosX - 4, ButtonPosY + 10);
+            cv::fillConvexPoly(resultWin, triangleBack2, 3, cv::Scalar(UI_COLOR), cv::LINE_AA);
+            int dx = mousePos.x - (ButtonPosX + 10);
+            int dy = mousePos.y - (ButtonPosY + 10);
+            float distance = std::sqrt(dx * dx + dy * dy);
+            if (mouseClicked && distance <= 20) {
+                int newFrame = std::max(currentFrame - framesIn10Seconds, 0);
+                cap.set(cv::CAP_PROP_POS_FRAMES, newFrame);
+                if (audioInitialized) {
+                    double newTime = newFrame / fps;
+                    ma_sound_seek_to_second(&audioSound, newTime);
+                }
+                mouseClicked = false;
+            }
+            else if (distance <= 20) {
+                cv::circle(resultWin, cv::Point(ButtonPosX + 10, ButtonPosY + 10), 20,
+                    cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+            }
+        }
+        else {
+            int ButtonPosX = Xposition + CENTER_DISTANCE;
+            int ButtonPosY = Yposition;
+            cv::Point triangleFor[3];
+            triangleFor[0] = cv::Point(ButtonPosX - 8, ButtonPosY + 2.5);
+            triangleFor[1] = cv::Point(ButtonPosX - 8, ButtonPosY + 17.5);
+            triangleFor[2] = cv::Point(ButtonPosX + 4, ButtonPosY + 10);
+            cv::fillConvexPoly(resultWin, triangleFor, 3, cv::Scalar(UI_COLOR), cv::LINE_AA);
+            cv::Point triangleFor2[3];
+            triangleFor2[0] = cv::Point(ButtonPosX - 20, ButtonPosY + 2.5);
+            triangleFor2[1] = cv::Point(ButtonPosX - 20, ButtonPosY + 17.5);
+            triangleFor2[2] = cv::Point(ButtonPosX - 8, ButtonPosY + 10);
+            cv::fillConvexPoly(resultWin, triangleFor2, 3, cv::Scalar(UI_COLOR), cv::LINE_AA);
+            int dx = mousePos.x - (ButtonPosX - 10);
+            int dy = mousePos.y - (ButtonPosY + 10);
+            float distance = std::sqrt(dx * dx + dy * dy);
+            if (mouseClicked && distance <= 20) {
+                int newFrame = std::max(currentFrame + framesIn10Seconds, 0);
+                cap.set(cv::CAP_PROP_POS_FRAMES, newFrame);
+                if (audioInitialized) {
+                    double newTime = newFrame / fps;
+                    ma_sound_seek_to_second(&audioSound, newTime);
+                }
+                mouseClicked = false;
+            }
+            else if (distance <= 20) {
+                cv::circle(resultWin, cv::Point(ButtonPosX - 10, ButtonPosY + 10), 20,
+                    cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+            }
+        }
+    }
+    void PauseButton(cv::Mat& resultWin, bool& isPaused) {
+        int ButtonPosX = Xposition - 15;
+        int ButtonPosY = Yposition - 5;
+        int dx = mousePos.x - (ButtonPosX + 12.5);
+        int dy = mousePos.y - (ButtonPosY + 12.5);
+        float distance = std::sqrt(dx * dx + dy * dy);
+        if (isPaused) {
+            cv::Point pts[3];
+            pts[0] = cv::Point(ButtonPosX + 10, ButtonPosY + 7.5);
+            pts[1] = cv::Point(ButtonPosX + 10, ButtonPosY + 22.5);
+            pts[2] = cv::Point(ButtonPosX + 25, ButtonPosY + 15);
+            cv::fillConvexPoly(resultWin, pts, 3, cv::Scalar(UI_COLOR), cv::LINE_AA);
+        }
+        else {
+            cv::rectangle(resultWin,
+                cv::Point(ButtonPosX + 7.5, ButtonPosY + 7.5),
+                cv::Point(ButtonPosX + 12.5, ButtonPosY + 22.5),
+                cv::Scalar(UI_COLOR), -1, cv::LINE_AA);
+            cv::rectangle(resultWin,
+                cv::Point(ButtonPosX + 17.5, ButtonPosY + 7.5),
+                cv::Point(ButtonPosX + 22.5, ButtonPosY + 22.5),
+                cv::Scalar(UI_COLOR), -1, cv::LINE_AA);
+        }
+
+        if (mouseClicked && distance <= 25) {
+            isPaused = !isPaused;
+            if (audioInitialized) {
+                if (isPaused) ma_sound_stop(&audioSound);
+                else ma_sound_start(&audioSound);
+            }
+            mouseClicked = false;
+        }
+        else if (distance <= 25) {
+            cv::circle(resultWin, cv::Point(Xposition, Yposition + 10), 25,
+                cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
         }
     }
 };
@@ -670,114 +770,15 @@ int main(int argc, char* argv[]) {
         if (IsSleep == false) {
             DrawInterface Interface(windowSize.width / 2, windowSize.height - 55, cap);
             // Кнопка возврата в начало
-            Interface.ButtonReload(0, result);
+            Interface.ReloadButton(0, result);
             //Кнопка перемотки в конец
-            Interface.ButtonReload(1, result);
+            Interface.ReloadButton(1, result);
             // Кнопка перемотки назад
-            int buttonXBack = windowSize.width / 2 - 110;
-            int buttonYBack = windowSize.height - 55;
-            int dxBack = mousePos.x - (buttonXBack + 10);
-            int dyBack = mousePos.y - (buttonYBack + 10);
-            float distanceBack = std::sqrt(dxBack * dxBack + dyBack * dyBack);
-
-            if (mouseClicked && distanceBack <= 20) {
-                int newFrame = std::max(currentFrame - framesIn10Seconds, 0);
-                cap.set(cv::CAP_PROP_POS_FRAMES, newFrame);
-                if (audioInitialized) {
-                    double newTime = newFrame / fps;
-                    ma_sound_seek_to_second(&audioSound, newTime);
-                }
-                mouseClicked = false;
-            }
-            else if (distanceBack <= 20) {
-                cv::circle(result, cv::Point(windowSize.width / 2 - 100, windowSize.height - 45), 20,
-                    cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-            }
-
-            cv::Point triangleBack[3];
-            triangleBack[0] = cv::Point(buttonXBack + 20, buttonYBack + 2.5);
-            triangleBack[1] = cv::Point(buttonXBack + 20, buttonYBack + 17.5);
-            triangleBack[2] = cv::Point(buttonXBack + 8, buttonYBack + 10);
-            cv::fillConvexPoly(result, triangleBack, 3, cv::Scalar(UI_COLOR), cv::LINE_AA);
-
-            cv::Point triangleBack2[3];
-            triangleBack2[0] = cv::Point(buttonXBack + 8, buttonYBack + 2.5);
-            triangleBack2[1] = cv::Point(buttonXBack + 8, buttonYBack + 17.5);
-            triangleBack2[2] = cv::Point(buttonXBack - 4, buttonYBack + 10);
-            cv::fillConvexPoly(result, triangleBack2, 3, cv::Scalar(UI_COLOR), cv::LINE_AA);
-
+            Interface.RewindButton(0, result, currentFrame, framesIn10Seconds, fps);
+            //Кнопка перемотки вперед
+            Interface.RewindButton(1, result, currentFrame, framesIn10Seconds, fps);
             // Кнопка паузы
-            int buttonX = windowSize.width / 2 - 15;
-            int buttonY = windowSize.height - 60;
-            int ButtonCenterX = buttonX + 15;
-            int ButtonCenterY = buttonY + 15;
-            int dx = mousePos.x - ButtonCenterX;
-            int dy = mousePos.y - ButtonCenterY;
-            float distance = std::sqrt(dx * dx + dy * dy);
-
-            if (mouseClicked && distance <= 25) {
-                isPaused = !isPaused;
-                if (audioInitialized) {
-                    if (isPaused) ma_sound_stop(&audioSound);
-                    else ma_sound_start(&audioSound);
-                }
-                mouseClicked = false;
-            }
-            else if (distance <= 25) {
-                cv::circle(result, cv::Point(windowSize.width / 2, windowSize.height - 45), 25,
-                    cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-            }
-
-            if (isPaused) {
-                cv::Point pts[3];
-                pts[0] = cv::Point(buttonX + 10, buttonY + 7.5);
-                pts[1] = cv::Point(buttonX + 10, buttonY + 22.5);
-                pts[2] = cv::Point(buttonX + 25, buttonY + 15);
-                cv::fillConvexPoly(result, pts, 3, cv::Scalar(UI_COLOR), cv::LINE_AA);
-            }
-            else {
-                cv::rectangle(result,
-                    cv::Point(buttonX + 7.5, buttonY + 7.5),
-                    cv::Point(buttonX + 12.5, buttonY + 22.5),
-                    cv::Scalar(UI_COLOR), -1, cv::LINE_AA);
-                cv::rectangle(result,
-                    cv::Point(buttonX + 17.5, buttonY + 7.5),
-                    cv::Point(buttonX + 22.5, buttonY + 22.5),
-                    cv::Scalar(UI_COLOR), -1, cv::LINE_AA);
-            }
-
-            // Кнопка перемотки вперед
-            int buttonXFor = windowSize.width / 2 + 110;
-            int buttonYFor = windowSize.height - 55;
-            int dxFor = mousePos.x - (buttonXFor - 10);
-            int dyFor = mousePos.y - (buttonYFor + 10);
-            float distanceFor = std::sqrt(dxFor * dxFor + dyFor * dyFor);
-
-            if (mouseClicked && distanceFor <= 20) {
-                int newFrame = std::min(currentFrame + framesIn10Seconds, totalFrames);
-                cap.set(cv::CAP_PROP_POS_FRAMES, newFrame);
-                if (audioInitialized) {
-                    double newTime = newFrame / fps;
-                    ma_sound_seek_to_second(&audioSound, newTime);
-                }
-                mouseClicked = false;
-            }
-            else if (distanceFor <= 20) {
-                cv::circle(result, cv::Point(windowSize.width / 2 + 100, windowSize.height - 45), 20,
-                    cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-            }
-
-            cv::Point triangleFor[3];
-            triangleFor[0] = cv::Point(buttonXFor - 8, buttonYFor + 2.5);
-            triangleFor[1] = cv::Point(buttonXFor - 8, buttonYFor + 17.5);
-            triangleFor[2] = cv::Point(buttonXFor + 4, buttonYFor + 10);
-            cv::fillConvexPoly(result, triangleFor, 3, cv::Scalar(UI_COLOR), cv::LINE_AA);
-
-            cv::Point triangleFor2[3];
-            triangleFor2[0] = cv::Point(buttonXFor - 20, buttonYFor + 2.5);
-            triangleFor2[1] = cv::Point(buttonXFor - 20, buttonYFor + 17.5);
-            triangleFor2[2] = cv::Point(buttonXFor - 8, buttonYFor + 10);
-            cv::fillConvexPoly(result, triangleFor2, 3, cv::Scalar(UI_COLOR), cv::LINE_AA);
+            Interface.PauseButton(result, isPaused);
 
             // Кнопка скорости
             int buttonXSpeed = windowSize.width / 2 + 300;
