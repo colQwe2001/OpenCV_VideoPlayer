@@ -236,6 +236,47 @@ public:
                 cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
         }
     }
+    void SpeedButton(const cv::Rect& sizeOfWindow, cv::Mat& resultWin) {
+        int ButtonPosX = sizeOfWindow.width / 2 + 290;
+        int ButtonPosY = sizeOfWindow.height - 45;
+        int dx = mousePos.x - ButtonPosX;
+        int dy = mousePos.y - ButtonPosY;
+        float distanceSpeed = std::sqrt(dx * dx + dy * dy);
+
+        int XspeedPos = sizeOfWindow.width / 2 + 300 - 35;
+        int YspeedPos = sizeOfWindow.height - 45 - 35;
+
+        if (mouseClicked && distanceSpeed <= 20) {
+            mouseClicked = false;
+            SpeedMenuActive = !SpeedMenuActive;
+        }
+        int underline_center;
+        if (Speed_Text == "1.5x" || Speed_Text == "0.5x") {
+            line_width = 22.5;
+            underline_center = sizeOfWindow.width / 2 + 297.5;
+        }
+        else {
+            line_width = 12.5;
+            underline_center = sizeOfWindow.width / 2 + 289;
+        }
+        if (distanceSpeed <= 20) {
+            cv::rectangle(resultWin,
+                cv::Point(underline_center - line_width, sizeOfWindow.height - 45 + 11.5),
+                cv::Point(underline_center + line_width, sizeOfWindow.height - 45 + 12),
+                cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+        }
+        cv::putText(resultWin, Speed_Text,
+            cv::Point(ButtonPosX - Speed_Text_X, ButtonPosY + 6),
+            fontFace, 0.6,
+            cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+    }
+};
+//структура для хранения элементов меню скорости
+struct SpeedMenuItem {
+    const char* TEXT;
+    int delay;
+    float speed;
+    int yOffset; // смещение по оси у 
 };
 // обработчик нажатия ЛКМ
 void onMouse(int event, int x, int y, int, void*) {
@@ -528,6 +569,46 @@ void DrawProgressBar(cv::Mat& resultWin, const cv::Rect& sizeOfWindow, const int
         mouseClicked = false;
     }
 }
+//Функция отрисовки меню скорости
+int DrawSpeedMenu(int targetDelay, const cv::Rect& sizeOfWindow, cv::Mat& resultWin) {
+    const int SPEED_MENU_POS_X = sizeOfWindow.width / 2 + 265;
+    const int SPEED_MENU_POS_Y = sizeOfWindow.height - 80;
+    DrawSpecificFigure SpeedMenu(SPEED_MENU_POS_X, SPEED_MENU_POS_Y - 150, 50, 150);
+    SpeedMenu.DrawRoundedRectangle(resultWin, cv::Scalar(0, 0, 0), 11);
+    SpeedMenuItem speedItems[] = {
+    {"2x",   targetDelay / 2,   2.0f, -10},
+    {"1.5x", targetDelay / 1.5, 1.5f, -50},
+    {"1x",   targetDelay,   1.0f, -90},
+    {"0.5x", targetDelay * 2, 0.5f, -130}
+    };
+    for (int i = 0; i < 4; i++) {
+        int itemY = SPEED_MENU_POS_Y + speedItems[i].yOffset;
+        cv::putText(resultWin, speedItems[i].TEXT, cv::Point(SPEED_MENU_POS_X + (i == 1 || i == 3 ? 4.5 : 13.5), itemY),
+            fontFace, 0.6, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+        bool isHover;
+        if (mousePos.x > SPEED_MENU_POS_X - 10 && mousePos.x < SPEED_MENU_POS_X + 60 &&
+            mousePos.y > itemY - 35 && mousePos.y < itemY) {
+            isHover = true;
+        }
+        else {
+            isHover = false;
+        }
+
+        if (isHover) {
+            cv::rectangle(resultWin,
+                cv::Point(sizeOfWindow.width / 2 + 300 - (i == 0 || i == 2 ? 22.5 : 29), itemY + 7),
+                cv::Point(sizeOfWindow.width / 2 + 300 + (i == 0 || i == 2 ? 2.5 : 12.5), itemY + 6),
+                cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+        }
+        if (mouseClicked && isHover) {
+            targetDelay = speedItems[i].delay;
+            Speed_Text = speedItems[i].TEXT;
+            ma_sound_set_pitch(&audioSound, speedItems[i].speed);
+        }
+    }
+    return targetDelay;
+}
+
 
 int main(int argc, char* argv[]) {
     setlocale(LC_ALL, "Rus");
@@ -779,136 +860,11 @@ int main(int argc, char* argv[]) {
             Interface.RewindButton(1, result, currentFrame, framesIn10Seconds, fps);
             // Кнопка паузы
             Interface.PauseButton(result, isPaused);
-
             // Кнопка скорости
-            int buttonXSpeed = windowSize.width / 2 + 300;
-            int buttonYSpeed = windowSize.height - 55;
-            int ButtonCenterXSpeed = buttonXSpeed - 10;
-            int ButtonCenterYSpeed = buttonYSpeed + 10;
-
-            int dxSpeed = mousePos.x - ButtonCenterXSpeed;
-            int dySpeed = mousePos.y - ButtonCenterYSpeed;
-            float distanceSpeed = std::sqrt(dxSpeed * dxSpeed + dySpeed * dySpeed);
-
-            int XspeedPos = windowSize.width / 2 + 300 - 35;
-            int YspeedPos = windowSize.height - 45 - 35;
-
-            if (mouseClicked && distanceSpeed <= 20) {
-                mouseClicked = false;
-                SpeedMenuActive = !SpeedMenuActive;
-            }
-            if (distanceSpeed <= 20) {
-                cv::rectangle(result,
-                    cv::Point(windowSize.width / 2 + 289 - line_width, windowSize.height - 45 + 11.5),
-                    cv::Point(windowSize.width / 2 + 289 + line_width, windowSize.height - 45 + 12),
-                    cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-            }
-
-            cv::putText(result, Speed_Text,
-                cv::Point(ButtonCenterXSpeed - Speed_Text_X, ButtonCenterYSpeed + 6),
-                fontFace, 0.6,
-                cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-
+            Interface.SpeedButton(windowSize, result);
             if (SpeedMenuActive) {
-                int x1 = windowSize.width / 2 + 300 - 35;
-                int x2 = windowSize.width / 2 + 300 + 35;
-                int y1 = YspeedPos;
-                int y2 = YspeedPos - 150;
-
-                cv::ellipse(result, cv::Point(x1 + 15, y2),
-                    cv::Size(15, 15), 180, 0, 90, cv::Scalar(0, 0, 0), -1, cv::LINE_AA);
-                cv::ellipse(result, cv::Point(x2 - 15, y2),
-                    cv::Size(15, 15), 270, 0, 90, cv::Scalar(0, 0, 0), -1, cv::LINE_AA);
-                cv::rectangle(result,
-                    cv::Point(windowSize.width / 2 + 300 - 20, YspeedPos - 150),
-                    cv::Point(windowSize.width / 2 + 300 + 20, YspeedPos - 165),
-                    cv::Scalar(0, 0, 0), -1);
-                cv::rectangle(result,
-                    cv::Point(windowSize.width / 2 + 300 - 35, YspeedPos - 150),
-                    cv::Point(windowSize.width / 2 + 300 + 35, YspeedPos),
-                    cv::Scalar(0, 0, 0), -1);
-
-                cv::putText(result, "2x", cv::Point(XspeedPos + 21, YspeedPos - 10),
-                    fontFace, 0.6, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-                if (mouseClicked && mousePos.x > XspeedPos && mousePos.x < XspeedPos + 70 &&
-                    mousePos.y > YspeedPos - 35 && mousePos.y < YspeedPos) {
-                    targetDelay = x2Delay;
-                    line_width = 12.5;
-                    Speed_Text_X = 14;
-                    Speed_Text = "2x";
-                    ma_sound_set_pitch(&audioSound, 2.0f);
-                    SpeedMenuActive = false;
-                    mouseClicked = false;
-                }
-                if (mousePos.x > XspeedPos && mousePos.x < XspeedPos + 70 &&
-                    mousePos.y > YspeedPos - 35 && mousePos.y < YspeedPos) {
-                    cv::rectangle(result,
-                        cv::Point(windowSize.width / 2 + 300 - 12.5, YspeedPos - 4),
-                        cv::Point(windowSize.width / 2 + 300 + 12.5, YspeedPos - 5),
-                        cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-                }
-                cv::putText(result, "1.5x", cv::Point(XspeedPos + 12, YspeedPos - 50),
-                    fontFace, 0.6, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-                if (mouseClicked && mousePos.x > XspeedPos && mousePos.x < XspeedPos + 70 &&
-                    mousePos.y > YspeedPos - 70 && mousePos.y < YspeedPos - 35) {
-                    targetDelay = x1_5Delay;
-                    line_width = 22.5;
-                    Speed_Text_X = 24;
-                    Speed_Text = "1.5x";
-                    ma_sound_set_pitch(&audioSound, 1.5f);
-                    SpeedMenuActive = false;
-                    mouseClicked = false;
-                }
-                if (mousePos.x > XspeedPos && mousePos.x < XspeedPos + 70 &&
-                    mousePos.y > YspeedPos - 70 && mousePos.y < YspeedPos - 35) {
-                    cv::rectangle(result,
-                        cv::Point(windowSize.width / 2 + 300 - 20, YspeedPos - 44),
-                        cv::Point(windowSize.width / 2 + 300 + 22.5, YspeedPos - 45),
-                        cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-                }
-                cv::putText(result, "1x", cv::Point(XspeedPos + 21, YspeedPos - 90),
-                    fontFace, 0.6, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-                if (mouseClicked && mousePos.x > XspeedPos && mousePos.x < XspeedPos + 70 &&
-                    mousePos.y > YspeedPos - 105 && mousePos.y < YspeedPos - 70) {
-                    targetDelay = x1Delay;
-                    line_width = 12.5;
-                    Speed_Text_X = 14;
-                    Speed_Text = "1x";
-                    ma_sound_set_pitch(&audioSound, 1.0f);
-                    SpeedMenuActive = false;
-                    mouseClicked = false;
-                }
-                if (mousePos.x > XspeedPos && mousePos.x < XspeedPos + 70 &&
-                    mousePos.y > YspeedPos - 105 && mousePos.y < YspeedPos - 70) {
-                    cv::rectangle(result,
-                        cv::Point(windowSize.width / 2 + 300 - 12.5, YspeedPos - 84),
-                        cv::Point(windowSize.width / 2 + 300 + 12.5, YspeedPos - 85),
-                        cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-                }
-                cv::putText(result, "0.5x", cv::Point(XspeedPos + 12, YspeedPos - 130),
-                    fontFace, 0.6, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-                if (mouseClicked && mousePos.x > XspeedPos && mousePos.x < XspeedPos + 70 &&
-                    mousePos.y > YspeedPos - 160 && mousePos.y < YspeedPos - 105) {
-                    targetDelay = x0_5Delay;
-                    line_width = 22.5;
-                    Speed_Text_X = 24;
-                    Speed_Text = "0.5x";
-                    ma_sound_set_pitch(&audioSound, 0.5f);
-                    SpeedMenuActive = false;
-                    mouseClicked = false;
-                }
-                if (mouseClicked && mousePos.x < XspeedPos && mousePos.x > XspeedPos + 70 &&
-                    mousePos.y < YspeedPos - 160 && mousePos.y > YspeedPos) {
-                    SpeedMenuActive = false;
-                    mouseClicked = false;
-                }
-                if (mousePos.x > XspeedPos && mousePos.x < XspeedPos + 70 &&
-                    mousePos.y > YspeedPos - 160 && mousePos.y < YspeedPos - 105) {
-                    cv::rectangle(result,
-                        cv::Point(windowSize.width / 2 + 300 - 20, YspeedPos - 124),
-                        cv::Point(windowSize.width / 2 + 300 + 22.5, YspeedPos - 125),
-                        cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-                }
+                DrawSpeedMenu(targetDelay, windowSize, result);
+                targetDelay = DrawSpeedMenu(targetDelay, windowSize, result);
             }
         }
         // ОТРИСОВКА ШКАЛЫ ГРОМКОСТИ
@@ -947,7 +903,7 @@ int main(int argc, char* argv[]) {
                 cv::ellipse(result, cv::Point(volumeBarX - 20, volumeBarY + 2.5),
                     cv::Size(2, 4), 0, 270, 450,
                     cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-            if (volume < 0.01f) {
+            if (volume < 0.01) {
                 cv::line(result,
                     cv::Point(volumeBarX - 20, volumeBarY - 2.5),
                     cv::Point(volumeBarX - 10, volumeBarY + 7.5),
