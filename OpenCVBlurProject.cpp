@@ -82,7 +82,7 @@ public:
         Xposition(Xposition), Yposition(Yposition), cap(cap) {
        
     }
-    void ReloadButton(bool direction, cv::Mat& resultWin) {
+    void ReloadButton(bool direction, cv::Mat& resultWin, int totalFrames, int fps) {
         const int CENTER_DISTANCE = 210;
         if (direction == 0) {
             int ButtonPosX = Xposition - CENTER_DISTANCE;
@@ -126,8 +126,8 @@ public:
             int dy = mousePos.y - (ButtonPosY + 10);
             float distance = std::sqrt(dx * dx + dy * dy);
             if (mouseClicked && distance <= 20) {
-                cap.set(cv::CAP_PROP_POS_FRAMES, 0);
-                if (audioInitialized) ma_sound_seek_to_second(&audioSound, 0);
+                cap.set(cv::CAP_PROP_POS_FRAMES, totalFrames - 1);
+                if (audioInitialized) ma_sound_seek_to_second(&audioSound, totalFrames / fps);
                 mouseClicked = false;
             }
             else if (distance <= 20) {
@@ -270,6 +270,113 @@ public:
             fontFace, 0.6,
             cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
     }
+    void VolumeBar(const cv::Rect& sizeOfWindow, cv::Mat& resultWin, int volumeBarX, int volumeBarY) {
+        int volumeBarWidth = 100;
+        int volumeBarHeight = 5;
+        int progressVolume = (int)(volumeBarWidth * volume);
+        cv::rectangle(resultWin, cv::Point(volumeBarX, volumeBarY), cv::Point(volumeBarX + volumeBarWidth, volumeBarY + volumeBarHeight), cv::Scalar(60, 60, 60), -1, cv::LINE_AA);
+        cv::rectangle(resultWin, cv::Point(volumeBarX, volumeBarY), cv::Point(volumeBarX + progressVolume, volumeBarY + volumeBarHeight), cv::Scalar(UI_COLOR), -1, cv::LINE_AA);
+        if (mouseClicked &&
+            mousePos.x >= volumeBarX && mousePos.x <= volumeBarX + volumeBarWidth &&
+            mousePos.y >= volumeBarY && mousePos.y <= volumeBarY + volumeBarHeight) {
+
+            float clickPercent = (mousePos.x - volumeBarX) / (float)volumeBarWidth;
+            volume = std::max(0.0f, std::min(1.0f, clickPercent));
+            mouseClicked = false;
+        }
+    }
+    void VolumeButton(cv::Mat& resultWin, int volumeBarX, int volumeBarY) {
+        cv::rectangle(resultWin, cv::Point(volumeBarX - 37.5, volumeBarY - 2.5), cv::Point(volumeBarX - 30, volumeBarY + 7.5), cv::Scalar(UI_COLOR), -1, cv::LINE_AA);
+        cv::Point pts[3] = {
+    cv::Point(volumeBarX - 35, volumeBarY + 2.5),
+    cv::Point(volumeBarX - 25, volumeBarY + 12.5),
+    cv::Point(volumeBarX - 25, volumeBarY - 7.5)
+        };
+        cv::fillConvexPoly(resultWin, pts, 3, cv::Scalar(UI_COLOR));
+        if (volume > 0.8)
+            cv::ellipse(resultWin, cv::Point(volumeBarX - 20, volumeBarY + 2.5),
+                cv::Size(10, 12), 0, 270, 450,
+                cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+        if (volume > 0.4)
+            cv::ellipse(resultWin, cv::Point(volumeBarX - 20, volumeBarY + 2.5),
+                cv::Size(6, 8), 0, 270, 450,
+                cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+        if (volume > 0)
+            cv::ellipse(resultWin, cv::Point(volumeBarX - 20, volumeBarY + 2.5),
+                cv::Size(2, 4), 0, 270, 450,
+                cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+        if (volume < 0.01) {
+            cv::line(resultWin,
+                cv::Point(volumeBarX - 20, volumeBarY - 2.5),
+                cv::Point(volumeBarX - 10, volumeBarY + 7.5),
+                cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+            cv::line(resultWin,
+                cv::Point(volumeBarX - 20, volumeBarY + 7.5),
+                cv::Point(volumeBarX - 10, volumeBarY - 2.5),
+                cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+        }
+        if (mouseClicked &&
+            mousePos.x > volumeBarX - 40 && mousePos.x < volumeBarX - 20 &&
+            mousePos.y > volumeBarY - 10 && mousePos.y < volumeBarY + 10 && is_silent == false) {
+            save_volume = volume;
+            volume = 0.0f;
+            mouseClicked = false;
+            is_silent = true;
+        }
+        if (mouseClicked &&
+            mousePos.x > volumeBarX - 40 && mousePos.x < volumeBarX - 20 &&
+            mousePos.y > volumeBarY - 10 && mousePos.y < volumeBarY + 10 && is_silent == true) {
+            volume = save_volume;
+            mouseClicked = false;
+            is_silent = false;
+        }
+    }
+    void Time(cv::Mat& resultWin, const cv::Rect& sizeOfWindow, int remainingTime, int currentTimeMinutes, int currentTimeSeconds, int totalTimeMinutes, int totalTimeSeconds) {
+        //Время видео
+        int TimeCenterX = sizeOfWindow.width - 150;
+        int TimeCenterY = sizeOfWindow.height - 40;
+        if (mouseClicked && (mousePos.x > TimeCenterX + 0 && mousePos.x < TimeCenterX + TimeStringLenght) && (mousePos.y > TimeCenterY - 10 && mousePos.y < TimeCenterY + 10)) {
+            CurrentTime = !CurrentTime;
+            mouseClicked = false;
+        }
+        if (CurrentTime == true) {
+            cv::putText(resultWin, std::to_string(currentTimeMinutes) + ":" + std::to_string(currentTimeSeconds) + "/" + std::to_string(totalTimeMinutes) + ":" + std::to_string(totalTimeSeconds),
+                cv::Point(TimeCenterX, sizeOfWindow.height - 40),
+                fontFace, 0.7,
+                cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+        }
+        else {
+            cv::putText(resultWin, "-" + std::to_string(remainingTime / 60) + ":" + std::to_string(remainingTime % 60) + "/" + std::to_string(totalTimeMinutes) + ":" + std::to_string(totalTimeSeconds),
+                cv::Point(TimeCenterX, sizeOfWindow.height - 40),
+                fontFace, 0.7,
+                cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+        }
+        if (CurrentTime == true) {
+            TimeStringLenght = 60;
+        }
+        if (CurrentTime == true && currentTimeSeconds >= 10) {
+            TimeStringLenght = 70;
+        }
+        if (CurrentTime == true && currentTimeMinutes >= 10) {
+            TimeStringLenght = 70;
+        }
+        if (CurrentTime == true && currentTimeMinutes >= 10 && currentTimeSeconds >= 10) {
+            TimeStringLenght = 80;
+        }
+        if (CurrentTime == false) {
+            TimeStringLenght = 80;
+        }
+        if (CurrentTime == false && (remainingTime / 60) >= 10) {
+            TimeStringLenght = 90;
+        }
+        if (CurrentTime == false && (remainingTime % 60) >= 10) {
+            TimeStringLenght = 90;
+        }
+        if (CurrentTime == false && (remainingTime % 60) >= 10 && (remainingTime / 60) >= 10) {
+            TimeStringLenght = 100;
+        }
+    }
+
 };
 //структура для хранения элементов меню скорости
 struct SpeedMenuItem {
@@ -789,15 +896,7 @@ int main(int argc, char* argv[]) {
         int currentTimeSeconds = (int)(currentFrame / fps) % 60;
         int totalTimeMinutes = (totalFrames / fps) / 60;
         int totalTimeSeconds = (int)(totalFrames / fps) % 60;
-        std::string totalTimeStringMinutes = std::to_string(totalTimeMinutes);
-        std::string totalTimeStringSeconds = std::to_string(totalTimeSeconds);
-        std::string currentTimeStringMinutes = std::to_string(currentTimeMinutes);
-        std::string currentTimeStringSeconds = std::to_string(currentTimeSeconds);
         int remainingTime = (totalFrames / fps) - (currentFrame / fps);
-        int remainingTimeMinutes = remainingTime / 60;
-        int remainingTimeSeconds = remainingTime % 60;
-        std::string remainingTimeMinutesString = std::to_string(remainingTimeMinutes);
-        std::string remainingTimeSecondsString = std::to_string(remainingTimeSeconds);
 
         //Название видео
         std::string FinalName;
@@ -835,7 +934,7 @@ int main(int argc, char* argv[]) {
                 mouseClicked = !mouseClicked;
                 featuresActive = false;
             }
-            FeaturesDraw(result, windowSize, FinalName, OldName, totalTimeStringMinutes, totalTimeStringSeconds, videoW, videoH, fps, codecStrPrint, sizeText);
+            FeaturesDraw(result, windowSize, FinalName, OldName, std::to_string(totalTimeMinutes), std::to_string(totalTimeSeconds), videoW, videoH, fps, codecStrPrint, sizeText);
         }
 
         //Кнопка скриншота
@@ -851,9 +950,9 @@ int main(int argc, char* argv[]) {
         if (IsSleep == false) {
             DrawInterface Interface(windowSize.width / 2, windowSize.height - 55, cap);
             // Кнопка возврата в начало
-            Interface.ReloadButton(0, result);
+            Interface.ReloadButton(0, result, totalFrames, fps);
             //Кнопка перемотки в конец
-            Interface.ReloadButton(1, result);
+            Interface.ReloadButton(1, result, totalFrames, fps);
             // Кнопка перемотки назад
             Interface.RewindButton(0, result, currentFrame, framesIn10Seconds, fps);
             //Кнопка перемотки вперед
@@ -866,112 +965,15 @@ int main(int argc, char* argv[]) {
                 DrawSpeedMenu(targetDelay, windowSize, result);
                 targetDelay = DrawSpeedMenu(targetDelay, windowSize, result);
             }
-        }
-        // ОТРИСОВКА ШКАЛЫ ГРОМКОСТИ
-        if (IsSleep == false) {
             int volumeBarX = windowSize.width - 350;
             int volumeBarY = windowSize.height - 48;
-            int volumeBarWidth = 100;
-            int volumeBarHeight = 5;
-            int progressVolume = (int)(volumeBarWidth * volume);
-            cv::rectangle(result, cv::Point(volumeBarX, volumeBarY), cv::Point(volumeBarX + volumeBarWidth, volumeBarY + volumeBarHeight), cv::Scalar(60, 60, 60), -1, cv::LINE_AA);
-            cv::rectangle(result, cv::Point(volumeBarX, volumeBarY), cv::Point(volumeBarX + progressVolume, volumeBarY + volumeBarHeight), cv::Scalar(UI_COLOR), -1, cv::LINE_AA);
-            if (mouseClicked &&
-                mousePos.x >= volumeBarX && mousePos.x <= volumeBarX + volumeBarWidth &&
-                mousePos.y >= volumeBarY && mousePos.y <= volumeBarY + volumeBarHeight) {
-
-                float clickPercent = (mousePos.x - volumeBarX) / (float)volumeBarWidth;
-                volume = std::max(0.0f, std::min(1.0f, clickPercent));
-                mouseClicked = false;
-            }
-            cv::rectangle(result, cv::Point(volumeBarX - 37.5, volumeBarY - 2.5), cv::Point(volumeBarX - 30, volumeBarY + 7.5), cv::Scalar(UI_COLOR), -1, cv::LINE_AA);
-            cv::Point pts[3] = {
-        cv::Point(volumeBarX - 35, volumeBarY + 2.5),
-        cv::Point(volumeBarX - 25, volumeBarY + 12.5),
-        cv::Point(volumeBarX - 25, volumeBarY - 7.5)
-            };
-            cv::fillConvexPoly(result, pts, 3, cv::Scalar(UI_COLOR));
-            if (volume > 0.8)
-                cv::ellipse(result, cv::Point(volumeBarX - 20, volumeBarY + 2.5),
-                    cv::Size(10, 12), 0, 270, 450,
-                    cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-            if (volume > 0.4)
-                cv::ellipse(result, cv::Point(volumeBarX - 20, volumeBarY + 2.5),
-                    cv::Size(6, 8), 0, 270, 450,
-                    cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-            if (volume > 0)
-                cv::ellipse(result, cv::Point(volumeBarX - 20, volumeBarY + 2.5),
-                    cv::Size(2, 4), 0, 270, 450,
-                    cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-            if (volume < 0.01) {
-                cv::line(result,
-                    cv::Point(volumeBarX - 20, volumeBarY - 2.5),
-                    cv::Point(volumeBarX - 10, volumeBarY + 7.5),
-                    cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-                cv::line(result,
-                    cv::Point(volumeBarX - 20, volumeBarY + 7.5),
-                    cv::Point(volumeBarX - 10, volumeBarY - 2.5),
-                    cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-            }
-            if (mouseClicked &&
-                mousePos.x > volumeBarX - 40 && mousePos.x < volumeBarX - 20 &&
-                mousePos.y > volumeBarY - 10 && mousePos.y < volumeBarY + 10 && is_silent == false) {
-                save_volume = volume;
-                volume = 0.0f;
-                mouseClicked = false;
-                is_silent = true;
-            }
-            if (mouseClicked &&
-                mousePos.x > volumeBarX - 40 && mousePos.x < volumeBarX - 20 &&
-                mousePos.y > volumeBarY - 10 && mousePos.y < volumeBarY + 10 && is_silent == true) {
-                volume = save_volume;
-                mouseClicked = false;
-                is_silent = false;
-            }
+            // ОТРИСОВКА ШКАЛЫ ГРОМКОСТИ
+            Interface.VolumeBar(windowSize, result, volumeBarX, volumeBarY);
+            // ОТРИСОВКА Кнопки ГРОМКОСТИ
+            Interface.VolumeButton(result, volumeBarX, volumeBarY);
+            Interface.Time(result, windowSize, remainingTime, currentTimeMinutes, currentTimeSeconds, totalTimeMinutes, totalTimeSeconds);
         }
-        //Время видео
-        int TimeCenterX = windowSize.width - 150;
-        int TimeCenterY = windowSize.height - 40;
-        if (mouseClicked && (mousePos.x > TimeCenterX+0 && mousePos.x < TimeCenterX + TimeStringLenght) && (mousePos.y > TimeCenterY - 10 && mousePos.y < TimeCenterY + 10)) {
-            CurrentTime = !CurrentTime;
-            mouseClicked = false;
-        }
-        if (CurrentTime == true) {
-            cv::putText(result, currentTimeStringMinutes + ":" + currentTimeStringSeconds + "/" + totalTimeStringMinutes + ":" + totalTimeStringSeconds,
-                cv::Point( TimeCenterX, windowSize.height - 40),
-                fontFace, 0.7,
-                cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-        }
-        else {
-            cv::putText(result, "-" + remainingTimeMinutesString + ":" + remainingTimeSecondsString + "/" + totalTimeStringMinutes + ":" + totalTimeStringSeconds,
-                cv::Point(TimeCenterX, windowSize.height - 40),
-                fontFace, 0.7,
-                cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-        }
-        if (CurrentTime == true) {
-            TimeStringLenght = 60;
-        }
-        if (CurrentTime == true && currentTimeSeconds >= 10) {
-            TimeStringLenght = 70;
-        }
-        if (CurrentTime == true && currentTimeMinutes >= 10) {
-            TimeStringLenght = 70;
-        }
-        if (CurrentTime == true && currentTimeMinutes >= 10 && currentTimeSeconds >= 10) {
-            TimeStringLenght = 80;
-        }
-        if (CurrentTime == false) {
-            TimeStringLenght = 80;
-        }
-        if (CurrentTime == false && remainingTimeMinutes >= 10) {
-            TimeStringLenght = 90;
-        }
-        if (CurrentTime == false && remainingTimeSeconds >= 10) {
-            TimeStringLenght = 90;
-        }
-        if (CurrentTime == false && remainingTimeSeconds >= 10 && remainingTimeMinutes >= 10) {
-            TimeStringLenght = 100;
-        }
+        
         ma_sound_set_volume(&audioSound, volume);
 
         cv::imshow("Video Player", result);
