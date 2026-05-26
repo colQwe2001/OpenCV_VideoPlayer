@@ -42,6 +42,8 @@ int SleepTimer = 0;
 bool IsSleep = false;
 auto startTimer = std::chrono::steady_clock::now();
 
+void GetScreen(const cv::Mat& frameScreen);
+
 class DrawSpecificFigure
 {
 private:
@@ -81,6 +83,35 @@ public:
     DrawInterface(int Xposition, int Yposition, cv::VideoCapture& cap) :
         Xposition(Xposition), Yposition(Yposition), cap(cap) {
        
+    }
+    void ScreenshotButton(cv::Mat& resultWin, const cv::Rect& sizeOfWindow, cv::Mat& frame) {
+        int buttonXCamera = sizeOfWindow.width / 2 - 285;
+        int buttonYCamera = sizeOfWindow.height - 40;
+        int dx = mousePos.x - (buttonXCamera + 5);
+        int dy = mousePos.y - (buttonYCamera - 7);
+        float distanceCamera = std::hypot(dx, dy);
+
+        // Корпус
+        DrawSpecificFigure Camera(buttonXCamera - 10, buttonYCamera - 10, 20, 10);
+        Camera.DrawRoundedRectangle(resultWin, UI_COLOR, 2);
+        DrawSpecificFigure CameraUp(buttonXCamera - 3, buttonYCamera - 13, 6, 3);
+        CameraUp.DrawRoundedRectangle(resultWin, UI_COLOR, 1);
+        // Объектив
+        cv::circle(resultWin, cv::Point(buttonXCamera, buttonYCamera - 5), 5,
+        cv::Scalar(0, 0, 0), 1, cv::LINE_AA);
+        //Вспышка
+        cv::rectangle(resultWin,
+        cv::Point(buttonXCamera + 7, buttonYCamera - 8),
+        cv::Point(buttonXCamera + 10, buttonYCamera - 10),
+        cv::Scalar(0, 0, 0), -1, cv::LINE_AA);
+
+        if (mouseClicked && distanceCamera <= 20) {
+             GetScreen(frame);
+             mouseClicked = false;
+        }
+        else if (distanceCamera <= 20) {
+            cv::circle(resultWin, cv::Point(buttonXCamera, sizeOfWindow.height - 45), 20, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+        }
     }
     void ReloadButton(bool direction, cv::Mat& resultWin, int totalFrames, int fps) {
         const int CENTER_DISTANCE = 210;
@@ -376,7 +407,7 @@ public:
             TimeStringLenght = 100;
         }
     }
-
+    
 };
 //структура для хранения элементов меню скорости
 struct SpeedMenuItem {
@@ -478,43 +509,22 @@ void InfoDraw(cv::Mat& resultWin, const cv::Rect& sizeOfWindow) {
 std::string GetCodec(std::string codecStr, std::string VideoName, std::string OldVideoName) {
     std::string codecStrPrint;
     if (converted == false) {
-        if (codecStr == "h264" || codecStr == "H264" || codecStr == "avc1" || codecStr == "AVC1") codecStrPrint = "H.264/AVC";
-        else if (codecStr == "hev1" || codecStr == "HEVC" || codecStr == "hevc" || codecStr == "hvc1" || codecStr == "h265" || codecStr == "H265") codecStrPrint = "H.265/HEVC";
-        else if (codecStr == "h261" || codecStr == "H261") codecStrPrint = "H.261";
-        else if (codecStr == "h262" || codecStr == "H262") codecStrPrint = "H.261/MPEG-2";
-        else if (codecStr == "h263" || codecStr == "H263") codecStrPrint = "H.263";
-        else if (codecStr == "MPG1" || codecStr == "mpg1" || codecStr == "MPEG") codecStrPrint = "MPEG - 1";
-        else if (codecStr == "MPG2" || codecStr == "mpg2") codecStrPrint = "MPEG - 2";
-        else if (codecStr == "MPG4" || codecStr == "mpg4" || codecStr == "mp4v" || codecStr == "MP4V" || codecStr == "XVID" || codecStr == "DIVX") codecStrPrint = "MPEG-4";
-        else if (codecStr == "WMV1" || codecStr == "wmv1") codecStrPrint = "Windows Media Video 7";
-        else if (codecStr == "WMV2" || codecStr == "wmv2") codecStrPrint = "Windows Media Video 8";
-        else if (codecStr == "WMV3" || codecStr == "wmv3") codecStrPrint = "Windows Media Video 9";
-        else if (codecStr == "RV10" || codecStr == "rv10") codecStrPrint = "RealVideo 1.0";
-        else if (codecStr == "RV20" || codecStr == "rv20") codecStrPrint = "RealVideo 2.0";
-        else if (codecStr == "RV30" || codecStr == "rv30") codecStrPrint = "RealVideo 3.0";
-        else if (codecStr == "VP80" || codecStr == "vp80") codecStrPrint = "VP8";
-        else if (codecStr == "VP90" || codecStr == "vp90") codecStrPrint = "VP9";
-        else if (codecStr == "AV01" || codecStr == "av01") codecStrPrint = "AV1";
-        else if (codecStr == "JPEG" || codecStr == "jpeg" || codecStr == "mjpa" || codecStr == "mjpb" || codecStr == "MJPG" || codecStr == "mjpg") codecStrPrint = "Motion JPEG";
-        else if (codecStr == "PNG" || codecStr == "png") codecStrPrint = "PNG";
-        else if (codecStr == "apch" || codecStr == "apcn" || codecStr == "apco" || codecStr == "ap4h") codecStrPrint = "Apple ProRes";
-        else if (codecStr == "DV25" || codecStr == "dv25") codecStrPrint = "DV (MiniDV)";
-        else if (codecStr == "DV50" || codecStr == "dv50") codecStrPrint = "DVCPRO 50";
-        else if (codecStr == "dvc") codecStrPrint = "DVCPRO HD";
-        else if (codecStr == "MJPEG" || codecStr == "mjpeg" || codecStr == "MJPG") codecStrPrint = "MJPEG";
-        else if (codecStr == "FLV1" || codecStr == "flv1") codecStrPrint = "Flash Video";
-        else if (codecStr == "THEO" || codecStr == "theo") codecStrPrint = "Theora";
-        else if (codecStr == "LAGS" || codecStr == "lags") codecStrPrint = "Lagarith";
-        else if (codecStr == "HFYU" || codecStr == "hfy u") codecStrPrint = "HuffYUV";
-        else if (codecStr == "FFV1" || codecStr == "ffv1") codecStrPrint = "FFV1";
-        else if (codecStr == "MAGY" || codecStr == "magy") codecStrPrint = "MagicYUV";
-        else if (codecStr == "UTVI" || codecStr == "utvi") codecStrPrint = "Ut Video";
-        else if (codecStr == "CVID" || codecStr == "cvid") codecStrPrint = "Cinepak";
-        else if (codecStr == "IV32" || codecStr == "iv32") codecStrPrint = "Intel Indeo 3.2";
-        else if (codecStr == "IV41" || codecStr == "iv41") codecStrPrint = "Intel Indeo 4.1";
-        else if (codecStr == "IV50" || codecStr == "iv50") codecStrPrint = "Intel Indeo 5.0";
-        else if (codecStr == "QTRP" || codecStr == "qtrp") codecStrPrint = "QuickTime RPZA";
-        else if (codecStr == "SMC" || codecStr == "smc") codecStrPrint = "QuickTime SMC";
+        if (codecStr == "h264" || codecStr == "H264" || codecStr == "avc1" || codecStr == "AVC1")
+            codecStrPrint = "H.264/AVC";
+        else if (codecStr == "hev1" || codecStr == "HEVC" || codecStr == "hevc" ||
+            codecStr == "hvc1" || codecStr == "h265" || codecStr == "H265")
+            codecStrPrint = "H.265/HEVC";
+        else if (codecStr == "MPG4" || codecStr == "mpg4" || codecStr == "mp4v" ||
+            codecStr == "MP4V" || codecStr == "XVID" || codecStr == "DIVX")
+            codecStrPrint = "MPEG-4";
+        else if (codecStr == "VP80" || codecStr == "vp80")
+            codecStrPrint = "VP8";
+        else if (codecStr == "VP90" || codecStr == "vp90")
+            codecStrPrint = "VP9";
+        else if (codecStr == "AV01" || codecStr == "av01")
+            codecStrPrint = "AV1";
+        else if (codecStr == "MJPG" || codecStr == "mjpg")
+            codecStrPrint = "Motion JPEG";
         else {
             std::string ext = VideoName.substr(VideoName.find_last_of(".") + 1);
             if (ext == "mp4" || ext == "m4v") codecStrPrint = "H.264/AVC (MP4)";
@@ -617,36 +627,8 @@ void FeaturesDraw(cv::Mat& resultWin, const cv::Rect& sizeOfWindow, std::string 
         cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
 }
 
-void DrawScreenshotButton(cv::Mat& resultWin, const cv::Rect& sizeOfWindow, cv::Mat& frame) {
-    int buttonXCamera = sizeOfWindow.width / 2 - 285;
-    int buttonYCamera = sizeOfWindow.height - 40;
-    int dx = mousePos.x - (buttonXCamera + 5);
-    int dy = mousePos.y - (buttonYCamera - 7);
-    float distanceCamera = std::hypot(dx, dy);
 
-    // Корпус
-    DrawSpecificFigure Camera(buttonXCamera - 10, buttonYCamera - 10, 20, 10);
-    Camera.DrawRoundedRectangle(resultWin, UI_COLOR, 2);
-    DrawSpecificFigure CameraUp(buttonXCamera - 3, buttonYCamera - 13, 6, 3);
-    CameraUp.DrawRoundedRectangle(resultWin, UI_COLOR, 1);
-    // Объектив
-    cv::circle(resultWin, cv::Point(buttonXCamera, buttonYCamera - 5), 5,
-        cv::Scalar(0, 0, 0), 1, cv::LINE_AA);
-    //Вспышка
-    cv::rectangle(resultWin,
-        cv::Point(buttonXCamera + 7, buttonYCamera - 8),
-        cv::Point(buttonXCamera + 10, buttonYCamera - 10),
-        cv::Scalar(0, 0, 0), -1, cv::LINE_AA);
-
-    if (mouseClicked && distanceCamera <= 20) {
-        GetScreen(frame);
-        mouseClicked = false;
-    }
-    else if (distanceCamera <= 20) {
-        cv::circle(resultWin, cv::Point(buttonXCamera, sizeOfWindow.height - 45), 20, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-    }
-}
-
+//Отрисовка Прогресс-Бара
 void DrawProgressBar(cv::Mat& resultWin, const cv::Rect& sizeOfWindow, const int currentFrame, const int totalFrames, int fps, cv::VideoCapture& cap) {
     int barY = sizeOfWindow.height - 84;
     int barX = 50;
@@ -716,6 +698,47 @@ int DrawSpeedMenu(int targetDelay, const cv::Rect& sizeOfWindow, cv::Mat& result
     return targetDelay;
 }
 
+void SleepMode() {
+        auto nowTimer = std::chrono::steady_clock::now();
+        auto elapsedTimer = std::chrono::duration_cast<std::chrono::milliseconds>(nowTimer - startTimer).count();
+        if (oldMousePos != mousePos || mouseClicked) {
+            startTimer = nowTimer;
+            IsSleep = false; 
+        }
+        
+        oldMousePos = mousePos;
+        if (elapsedTimer >= 10000) {
+            IsSleep = true;
+        }
+        else {
+            IsSleep = false;
+            
+        }
+}
+
+void CheckButtonCodes(int key, cv::Mat& frame, cv::VideoCapture& cap) {
+        if (key == 32) { // кнопка Space (пауза)
+            isPaused = !isPaused;
+            if (audioInitialized) {
+                if (isPaused) ma_sound_stop(&audioSound);
+                else ma_sound_start(&audioSound);
+            }
+        }
+        else if (key == 114 || key == 82 || key == 234 || key == 202) { //кнопка R (перезагрузка)
+           cap.set(cv::CAP_PROP_POS_FRAMES, 0);
+           if (audioInitialized) ma_sound_seek_to_second(&audioSound, 0);
+        }
+        else if (key == 248 || key ==216 || key == 105 || key == 73) { //кнопка I (свойства)
+            featuresActive = !featuresActive;
+        }
+        else if (key == 251 || key == 219 || key == 115 || key == 83) { //кнопка S (скриншот)
+            GetScreen(frame);
+        }
+        //Получаем коды нажатых кнопок в консоли
+        /*if (key > 0) {
+            std::cout << "Key code: " << key << std::endl;
+        }*/
+}
 
 int main(int argc, char* argv[]) {
     setlocale(LC_ALL, "Rus");
@@ -939,16 +962,12 @@ int main(int argc, char* argv[]) {
 
         //Кнопка скриншота
         if (IsSleep == false) {
-            DrawScreenshotButton(result, windowSize, frame);  
-        }
-        
-        if (IsSleep == false) {
+            
             DrawProgressBar(result, windowSize, currentFrame, totalFrames, fps, cap);
-        }
 
-        // ОТРИСОВКА ИНТЕРФЕЙСА
-        if (IsSleep == false) {
             DrawInterface Interface(windowSize.width / 2, windowSize.height - 55, cap);
+            //
+            Interface.ScreenshotButton(result, windowSize, frame);
             // Кнопка возврата в начало
             Interface.ReloadButton(0, result, totalFrames, fps);
             //Кнопка перемотки в конец
@@ -967,10 +986,11 @@ int main(int argc, char* argv[]) {
             }
             int volumeBarX = windowSize.width - 350;
             int volumeBarY = windowSize.height - 48;
-            // ОТРИСОВКА ШКАЛЫ ГРОМКОСТИ
+            // Отрисовка шкалы громкости
             Interface.VolumeBar(windowSize, result, volumeBarX, volumeBarY);
-            // ОТРИСОВКА Кнопки ГРОМКОСТИ
+            //Отрисовка кнопки громкости
             Interface.VolumeButton(result, volumeBarX, volumeBarY);
+            //Отрисовка времени
             Interface.Time(result, windowSize, remainingTime, currentTimeMinutes, currentTimeSeconds, totalTimeMinutes, totalTimeSeconds);
         }
         
@@ -978,22 +998,7 @@ int main(int argc, char* argv[]) {
 
         cv::imshow("Video Player", result);
 
-        //Спящий режим
-        auto nowTimer = std::chrono::steady_clock::now();
-        auto elapsedTimer = std::chrono::duration_cast<std::chrono::milliseconds>(nowTimer - startTimer).count();
-        if (oldMousePos != mousePos || mouseClicked) {
-            startTimer = nowTimer;
-            IsSleep = false; 
-        }
-        
-        oldMousePos = mousePos;
-        if (elapsedTimer >= 10000) {
-            IsSleep = true;
-        }
-        else {
-            IsSleep = false;
-            
-        }
+        SleepMode();
 
         if (mouseClicked) {
             SpeedMenuActive = false;
@@ -1003,27 +1008,7 @@ int main(int argc, char* argv[]) {
         cv::imshow("Video Player", result);
         int key = cv::waitKey(1);
         if (key == 27) break; //  кнопка ESC (выход)
-        else if (key == 32) { // кнопка Space (пауза)
-            isPaused = !isPaused;
-            if (audioInitialized) {
-                if (isPaused) ma_sound_stop(&audioSound);
-                else ma_sound_start(&audioSound);
-            }
-        }
-        else if (key == 114 || key == 82 || key == 234 || key == 202) { //кнопка R (перезагрузка)
-           cap.set(cv::CAP_PROP_POS_FRAMES, 0);
-           if (audioInitialized) ma_sound_seek_to_second(&audioSound, 0);
-        }
-        else if (key == 248 || key ==216 || key == 105 || key == 73) { //кнопка I (свойства)
-            featuresActive = !featuresActive;
-        }
-        else if (key == 251 || key == 219 || key == 115 || key == 83) { //кнопка S (скриншот)
-            GetScreen(frame);
-        }
-        //Получаем коды нажатых кнопок в консоли
-        /*if (key > 0) {
-            std::cout << "Key code: " << key << std::endl;
-        }*/
+        CheckButtonCodes(key, frame, cap);
     }
 
     if (audioInitialized) {
