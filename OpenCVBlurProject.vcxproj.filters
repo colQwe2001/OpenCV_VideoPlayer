@@ -23,6 +23,9 @@
     <ClInclude Include="resource.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
+    <ClInclude Include="Constants.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resources.rc">

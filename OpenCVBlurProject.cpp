@@ -5,6 +5,8 @@
 #include <chrono>
 #include <windows.h>
 #include <filesystem>
+#include "Constants.h"
+using namespace UI;
 
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio.h"
@@ -21,8 +23,6 @@ cv::Point oldMousePos(0,0);
 cv::Point mousePos;
 bool mouseClicked = false;
 bool SpeedMenuActive = false;
-const cv::Scalar UI_COLOR(192, 192, 192);
-int fontFace = cv::FONT_HERSHEY_DUPLEX;
 std::string Name;
 ma_engine audioEngine;
 ma_sound audioSound;
@@ -86,26 +86,23 @@ public:
        
     }
     void DrawProgressBar(cv::Mat& resultWin, const cv::Rect& sizeOfWindow, const int currentFrame, const int totalFrames, int fps, cv::VideoCapture& cap) {
-        int barY = sizeOfWindow.height - 84;
-        int barX = 50;
-        int barWidth = sizeOfWindow.width - 100;
-        int barHeight = 6;
-        int handleRadius = 5;
-        bool isOverBar = (mousePos.y > barY - barHeight - 5 && mousePos.y < barY + 5 && mousePos.x > barX && mousePos.x < barX + barWidth);
+        int barY = sizeOfWindow.height - PROGRESS_Y_OFFSET;
+        int barWidth = sizeOfWindow.width - PROGRESS_WIDTH_OFFSET;
+        bool isOverBar = (mousePos.y > barY - PROGRESS_HEIGHT - 5 && mousePos.y < barY + 5 && mousePos.x > PROGRESS_X && mousePos.x < PROGRESS_X + barWidth);
         cv::rectangle(resultWin,
-            cv::Point(barX, barY - barHeight / 2),
-            cv::Point(barX + barWidth, barY + barHeight / 2),
+            cv::Point(PROGRESS_X, barY - PROGRESS_HEIGHT / 2),
+            cv::Point(PROGRESS_X + barWidth, barY + PROGRESS_HEIGHT / 2),
             cv::Scalar(60, 60, 60), -1);
         int progressWidth = (int)((currentFrame / (double)totalFrames) * barWidth);
         cv::rectangle(resultWin,
-            cv::Point(barX, barY - barHeight / 2),
-            cv::Point(barX + progressWidth, barY + barHeight / 2),
+            cv::Point(PROGRESS_X, barY - PROGRESS_HEIGHT / 2),
+            cv::Point(PROGRESS_X + progressWidth, barY + PROGRESS_HEIGHT / 2),
             cv::Scalar(UI_COLOR), -1);
-        int circlePosX = (int)progressWidth + barX;
-        cv::circle(resultWin, cv::Point(circlePosX, barY), handleRadius, cv::Scalar(UI_COLOR), -1, cv::LINE_AA);
+        int circlePosX = (int)progressWidth + PROGRESS_X;
+        cv::circle(resultWin, cv::Point(circlePosX, barY), HANDLE_RADIUS, cv::Scalar(UI_COLOR), -1, cv::LINE_AA);
         if (mouseClicked && isOverBar && SpeedMenuActive == false)
         {
-            float clickPercent = (mousePos.x - barX) / (float)barWidth;
+            float clickPercent = (mousePos.x - PROGRESS_X) / (float)barWidth;
             int newFrame = std::clamp((int)(totalFrames * clickPercent), 0, totalFrames - 1);
             cap.set(cv::CAP_PROP_POS_FRAMES, newFrame);
             if (audioInitialized) {
@@ -115,26 +112,26 @@ public:
         }
     }
     void InfoButton(cv::Mat& resultWin, const cv::Rect& sizeOfWindow) {
-        int btnX = sizeOfWindow.width / 2 - 370;
+        int btnX = sizeOfWindow.width / 2 - BTN_INFO_OFFSET;
         int btnY = sizeOfWindow.height - 37.5;
         cv::putText(resultWin, "i",
             cv::Point(btnX, btnY),
-            fontFace, 0.8,
+            FONT, FONT_SIZE_MEDIUM,
             cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
         float dist = std::hypot(mousePos.x - (btnX + 5), mousePos.y - (btnY - 7));
-        if (mouseClicked && dist <= 15) {
+        if (mouseClicked && dist <= BTN_RADIUS_SMALL) {
             featuresActive = !featuresActive;
             mouseClicked = false;
         }
-        else if (dist <= 15) {
-            cv::circle(resultWin, cv::Point(btnX + 3, btnY - 8), 15, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+        else if (dist <= BTN_RADIUS_SMALL) {
+            cv::circle(resultWin, cv::Point(btnX + 3, btnY - 8), BTN_RADIUS_SMALL, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
         }
     }
     void ScreenshotButton(cv::Mat& resultWin, const cv::Rect& sizeOfWindow, cv::Mat& frame) {
-        int ButtonPosX = sizeOfWindow.width / 2 - 285;
+        int ButtonPosX = sizeOfWindow.width / 2 - BTN_SCREENSHOT_OFFSET;
         int ButtonPosY = sizeOfWindow.height - 40;
-        int dx = mousePos.x - (ButtonPosX + 5);
-        int dy = mousePos.y - (ButtonPosY - 7);
+        int dx = mousePos.x - (ButtonPosX + 0);
+        int dy = mousePos.y - (ButtonPosY - 5);
         float distanceCamera = std::hypot(dx, dy);
         // Корпус
         DrawSpecificFigure Camera(ButtonPosX - 10, ButtonPosY - 10, 20, 10);
@@ -150,18 +147,17 @@ public:
         cv::Point(ButtonPosX + 10, ButtonPosY - 10),
         cv::Scalar(0, 0, 0), -1, cv::LINE_AA);
 
-        if (mouseClicked && distanceCamera <= 20) {
+        if (mouseClicked && distanceCamera <= BTN_RADIUS_BASIC) {
              GetScreen(frame);
              mouseClicked = false;
         }
-        else if (distanceCamera <= 20) {
-            cv::circle(resultWin, cv::Point(ButtonPosX, sizeOfWindow.height - 45), 20, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+        else if (distanceCamera <= BTN_RADIUS_BASIC) {
+            cv::circle(resultWin, cv::Point(ButtonPosX, sizeOfWindow.height - 45), BTN_RADIUS_BASIC, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
         }
     }
     void ReloadButton(bool direction, cv::Mat& resultWin, int totalFrames, int fps) {
-        const int CENTER_DISTANCE = 210;
         if (direction == 0) {
-            int ButtonPosX = Xposition - CENTER_DISTANCE;
+            int ButtonPosX = Xposition - BTN_RELOAD_OFFSET;
             int ButtonPosY = Yposition;
             cv::rectangle(resultWin,
                 cv::Point(ButtonPosX + 1, ButtonPosY + 2.5),
@@ -176,18 +172,18 @@ public:
             int dx = mousePos.x - (ButtonPosX + 10);
             int dy = mousePos.y - (ButtonPosY + 10);
             float distance = std::sqrt(dx * dx + dy * dy);
-            if (mouseClicked && distance <= 20) {
+            if (mouseClicked && distance <= BTN_RADIUS_BASIC) {
                 cap.set(cv::CAP_PROP_POS_FRAMES, 0);
                 if (audioInitialized) ma_sound_seek_to_second(&audioSound, 0);
                 mouseClicked = false;
             }
-            else if (distance <= 20) {
-                cv::circle(resultWin, cv::Point(ButtonPosX + 10, ButtonPosY + 10), 20,
+            else if (distance <= BTN_RADIUS_BASIC) {
+                cv::circle(resultWin, cv::Point(ButtonPosX + 10, ButtonPosY + 10), BTN_RADIUS_BASIC,
                     cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
             }
         }
         else{
-            int ButtonPosX = Xposition + CENTER_DISTANCE;
+            int ButtonPosX = Xposition + BTN_RELOAD_OFFSET;
             int ButtonPosY = Yposition;
             cv::rectangle(resultWin,
                 cv::Point(ButtonPosX - 4, ButtonPosY + 2.5),
@@ -213,9 +209,8 @@ public:
         }
     }
     void RewindButton(bool direction, cv::Mat& resultWin, const int currentFrame, const int framesIn10Seconds, double fps) {
-        const int CENTER_DISTANCE = 110;
         if (direction == 0) {
-            int ButtonPosX = Xposition - CENTER_DISTANCE;
+            int ButtonPosX = Xposition - BTN_REWIND_OFFSET;
             int ButtonPosY = Yposition;
             cv::Point triangleBack[3];
             triangleBack[0] = cv::Point(ButtonPosX + 20, ButtonPosY + 2.5);
@@ -230,7 +225,7 @@ public:
             int dx = mousePos.x - (ButtonPosX + 10);
             int dy = mousePos.y - (ButtonPosY + 10);
             float distance = std::sqrt(dx * dx + dy * dy);
-            if (mouseClicked && distance <= 20) {
+            if (mouseClicked && distance <= BTN_RADIUS_BASIC) {
                 int newFrame = std::max(currentFrame - framesIn10Seconds, 0);
                 cap.set(cv::CAP_PROP_POS_FRAMES, newFrame);
                 if (audioInitialized) {
@@ -239,13 +234,13 @@ public:
                 }
                 mouseClicked = false;
             }
-            else if (distance <= 20) {
-                cv::circle(resultWin, cv::Point(ButtonPosX + 10, ButtonPosY + 10), 20,
+            else if (distance <= BTN_RADIUS_BASIC) {
+                cv::circle(resultWin, cv::Point(ButtonPosX + 10, ButtonPosY + 10), BTN_RADIUS_BASIC,
                     cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
             }
         }
         else {
-            int ButtonPosX = Xposition + CENTER_DISTANCE;
+            int ButtonPosX = Xposition + BTN_REWIND_OFFSET;
             int ButtonPosY = Yposition;
             cv::Point triangleFor[3];
             triangleFor[0] = cv::Point(ButtonPosX - 8, ButtonPosY + 2.5);
@@ -299,7 +294,7 @@ public:
                 cv::Scalar(UI_COLOR), -1, cv::LINE_AA);
         }
 
-        if (mouseClicked && distance <= 25) {
+        if (mouseClicked && distance <= BTN_RADIUS_PAUSE) {
             isPaused = !isPaused;
             if (audioInitialized) {
                 if (isPaused) ma_sound_stop(&audioSound);
@@ -307,13 +302,13 @@ public:
             }
             mouseClicked = false;
         }
-        else if (distance <= 25) {
-            cv::circle(resultWin, cv::Point(Xposition, Yposition + 10), 25,
+        else if (distance <= BTN_RADIUS_PAUSE) {
+            cv::circle(resultWin, cv::Point(Xposition, Yposition + 10), BTN_RADIUS_PAUSE,
                 cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
         }
     }
     void SpeedButton(const cv::Rect& sizeOfWindow, cv::Mat& resultWin) {
-        int ButtonPosX = sizeOfWindow.width / 2 + 280;
+        int ButtonPosX = sizeOfWindow.width / 2 + BTN_SPEED_OFFSET;
         int ButtonPosY = sizeOfWindow.height - 45;
         int dx = mousePos.x - ButtonPosX;
         int dy = mousePos.y - ButtonPosY;
@@ -343,20 +338,18 @@ public:
         }
         cv::putText(resultWin, Speed_Text,
             cv::Point(ButtonPosX - Speed_Text_X, ButtonPosY + 6),
-            fontFace, 0.6,
+            FONT, FONT_SIZE_SMALL,
             cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
     }
     void VolumeBar(const cv::Rect& sizeOfWindow, cv::Mat& resultWin, int volumeBarX, int volumeBarY) {
-        int volumeBarWidth = 100;
-        int volumeBarHeight = 5;
-        int progressVolume = (int)(volumeBarWidth * volume);
-        cv::rectangle(resultWin, cv::Point(volumeBarX, volumeBarY), cv::Point(volumeBarX + volumeBarWidth, volumeBarY + volumeBarHeight), cv::Scalar(60, 60, 60), -1, cv::LINE_AA);
-        cv::rectangle(resultWin, cv::Point(volumeBarX, volumeBarY), cv::Point(volumeBarX + progressVolume, volumeBarY + volumeBarHeight), cv::Scalar(UI_COLOR), -1, cv::LINE_AA);
+        int progressVolume = (int)(VOLUME_BAR_WIDTH * volume);
+        cv::rectangle(resultWin, cv::Point(volumeBarX, volumeBarY), cv::Point(volumeBarX + VOLUME_BAR_WIDTH, volumeBarY + VOLUME_BAR_HEIGHT), cv::Scalar(60, 60, 60), -1, cv::LINE_AA);
+        cv::rectangle(resultWin, cv::Point(volumeBarX, volumeBarY), cv::Point(volumeBarX + progressVolume, volumeBarY + VOLUME_BAR_HEIGHT), cv::Scalar(UI_COLOR), -1, cv::LINE_AA);
         if (mouseClicked &&
-            mousePos.x >= volumeBarX && mousePos.x <= volumeBarX + volumeBarWidth &&
-            mousePos.y >= volumeBarY && mousePos.y <= volumeBarY + volumeBarHeight) {
+            mousePos.x >= volumeBarX && mousePos.x <= volumeBarX + VOLUME_BAR_WIDTH &&
+            mousePos.y >= volumeBarY && mousePos.y <= volumeBarY + VOLUME_BAR_HEIGHT) {
 
-            float clickPercent = (mousePos.x - volumeBarX) / (float)volumeBarWidth;
+            float clickPercent = (mousePos.x - volumeBarX) / (float)VOLUME_BAR_WIDTH;
             volume = std::max(0.0f, std::min(1.0f, clickPercent));
             mouseClicked = false;
         }
@@ -409,8 +402,8 @@ public:
     }
     void Time(cv::Mat& resultWin, const cv::Rect& sizeOfWindow, int remainingTime, int currentTimeMinutes, int currentTimeSeconds, int totalTimeMinutes, int totalTimeSeconds) {
         //Время видео
-        int TimeCenterX = sizeOfWindow.width - 150;
-        int TimeCenterY = sizeOfWindow.height - 40;
+        int TimeCenterX = sizeOfWindow.width - TIME_OFFSET_X;
+        int TimeCenterY = sizeOfWindow.height - TIME_OFFSET_Y;
         if (mouseClicked && (mousePos.x > TimeCenterX + 0 && mousePos.x < TimeCenterX + TimeStringLenght) && (mousePos.y > TimeCenterY - 20 && mousePos.y < TimeCenterY + 5)) {
             CurrentTime = !CurrentTime;
             mouseClicked = false;
@@ -418,13 +411,13 @@ public:
         if (CurrentTime == true) {
             cv::putText(resultWin, std::to_string(currentTimeMinutes) + ":" + std::to_string(currentTimeSeconds) + "/" + std::to_string(totalTimeMinutes) + ":" + std::to_string(totalTimeSeconds),
                 cv::Point(TimeCenterX, sizeOfWindow.height - 40),
-                fontFace, 0.7,
+                FONT, FONT_SIZE_TIME,
                 cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
         }
         else {
             cv::putText(resultWin, "-" + std::to_string(remainingTime / 60) + ":" + std::to_string(remainingTime % 60) + "/" + std::to_string(totalTimeMinutes) + ":" + std::to_string(totalTimeSeconds),
                 cv::Point(TimeCenterX, sizeOfWindow.height - 40),
-                fontFace, 0.7,
+                FONT, FONT_SIZE_TIME,
                 cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
         }
         if (CurrentTime == true) {
@@ -453,7 +446,7 @@ public:
         }
     }
     void DrawBouncingBar(const cv::Rect& sizeOfWindow, cv::Mat& resultWin, bool& isPaused) {
-        int slidersX = sizeOfWindow.width - 175;
+        int slidersX = sizeOfWindow.width - BOUSING_BAR_OFFSET;
         static float volumeJumpY = 0;
         static float volumeJumpY2 = 5;
         static float volumeJumpY3 = 2;
@@ -481,9 +474,8 @@ public:
             cv::Scalar(UI_COLOR), -1, cv::LINE_AA);
     }
     void LoopButton(cv::Mat& resultWin, const cv::Rect& sizeOfWindow) {
-        int ButtonPosX = sizeOfWindow.width - 420;
+        int ButtonPosX = sizeOfWindow.width - BTN_LOOP_OFFSET;
         int ButtonPosY = sizeOfWindow.height - 45;
-        int radius = 15;
         int dx = mousePos.x - ButtonPosX;
         int dy = mousePos.y - ButtonPosY;
         float distance = std::sqrt(dx * dx + dy * dy);
@@ -512,14 +504,14 @@ public:
         arrow2[2] = cv::Point(ButtonPosX + 6, ButtonPosY + 3);
         cv::fillConvexPoly(resultWin, arrow2, 3, cv::Scalar(UI_COLOR), cv::LINE_AA);
         if (loopActive == true) {
-            cv::circle(resultWin, cv::Point(ButtonPosX, ButtonPosY), radius, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+            cv::circle(resultWin, cv::Point(ButtonPosX, ButtonPosY), BTN_RADIUS_SMALL, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
         }
-        if (mouseClicked && distance <= radius) {
+        if (mouseClicked && distance <= BTN_RADIUS_SMALL) {
             loopActive = !loopActive;
             mouseClicked = false;
         }
-        else if (distance <= radius) {
-            cv::circle(resultWin, cv::Point(ButtonPosX, ButtonPosY), radius, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+        else if (distance <= BTN_RADIUS_SMALL) {
+            cv::circle(resultWin, cv::Point(ButtonPosX, ButtonPosY), BTN_RADIUS_SMALL, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
         }
     }
 };
@@ -576,7 +568,7 @@ std::string ConvertWEBMtoMP4(std::string inputFile) {
     inputFile = mp4Name;
     return inputFile;
 }
-
+//Функция получения кодека
 std::string GetCodec(cv::VideoCapture& cap){
     int fourcc = cap.get(cv::CAP_PROP_FOURCC);
     char codec[5] = {
@@ -588,7 +580,7 @@ std::string GetCodec(cv::VideoCapture& cap){
     };
     return std::string(codec);
 }
-
+//Функция установки иконки
 void SetIcon(const std::string& WindowName,const std::string& IconFileName) {
     HWND hwnd = FindWindowA(NULL, WindowName.c_str());  // берём активное окно
     if (hwnd) {
@@ -603,10 +595,26 @@ void SetIcon(const std::string& WindowName,const std::string& IconFileName) {
         }
     }
 }
-
-std::string GetCodec(std::string codecStr, std::string VideoName, std::string OldVideoName) {
+//Функция установки кодека
+std::string SetCodec(std::string codecStr, std::string VideoName, std::string OldVideoName) {
     std::string codecStrPrint;
     if (converted == false) {
+        std::string ext = VideoName.substr(VideoName.find_last_of(".") + 1);
+        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+
+        if (ext == "ts" || ext == "m2ts" || ext == "mts") {
+            return "MPEG-2 Transport Stream (H.264/H.265)";
+        }
+        if (ext == "mkv") {
+            return "Matroska (MKV)";
+        }
+        if (ext == "mov") {
+            return "QuickTime (H.264/ProRes)";
+        }
+        if (ext == "avi") {
+            return "AVI (DivX/Xvid/MPEG-4)";
+        }
+
         if (codecStr == "h264" || codecStr == "H264" || codecStr == "avc1" || codecStr == "AVC1")
             codecStrPrint = "H.264/AVC";
         else if (codecStr == "hev1" || codecStr == "HEVC" || codecStr == "hevc" ||
@@ -647,7 +655,7 @@ std::string GetCodec(std::string codecStr, std::string VideoName, std::string Ol
         if (ext == "webm") codecStrPrint = "WebM (VP8/VP9)";
     }
 }
-
+//Функция получения размера видео
 std::string GetSize(long long bytes) {
     char sizeText[32];
     if (bytes < 1024) {
@@ -667,69 +675,69 @@ std::string GetSize(long long bytes) {
     }
     return std::string(sizeText);
 }
-
+//Функция отрисовки свойств
 void FeaturesDraw(cv::Mat& resultWin, const cv::Rect& sizeOfWindow, std::string VideoName, std::string OldVideoName, std::string Minutes, std::string Seconds, int WindowWidth, int WindowHeight, double fps, std::string codecStr, std::string sizeText) {
     int NameIndex = VideoName.find_last_of(".");
     int InfoY = (sizeOfWindow.height) / 4;
     int InfoX = (sizeOfWindow.width) / 4 + 40;
     cv::putText(resultWin, "Features",
         cv::Point(InfoX, InfoY + 40),
-        fontFace, 1.0,
+        FONT, FONT_SIZE_BASIC,
         cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
     cv::putText(resultWin, "Name: " + VideoName.substr(0, NameIndex),
         cv::Point(InfoX, InfoY + 85),
-        fontFace, 0.6,
+        FONT, FONT_SIZE_SMALL,
         cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
     cv::putText(resultWin, "Duration: " + Minutes + ":" + Seconds,
         cv::Point(InfoX, InfoY + 120),
-        fontFace, 0.6,
+        FONT, FONT_SIZE_SMALL,
         cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
     if (converted == false) {
         cv::putText(resultWin, "Video format: " + VideoName.substr(NameIndex),
             cv::Point(InfoX, InfoY + 155),
-            fontFace, 0.6,
+            FONT, FONT_SIZE_SMALL,
             cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
     }
     else {
         cv::putText(resultWin, "Video format: " + OldVideoName.substr(OldVideoName.find_last_of(".")),
             cv::Point(InfoX, InfoY + 155),
-            fontFace, 0.6,
+            FONT, FONT_SIZE_SMALL,
             cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
     }
     std::string videoResolutionX = std::to_string(WindowWidth);
     std::string videoResolutionY = std::to_string(WindowHeight);
     cv::putText(resultWin, "Video resolution: " + videoResolutionX + "x" + videoResolutionY,
         cv::Point(InfoX, InfoY + 190),
-        fontFace, 0.6,
+        FONT, FONT_SIZE_SMALL,
         cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
     std::string videoFPSstring = std::to_string((int)fps);
     cv::putText(resultWin, "Frame rate: " + videoFPSstring,
         cv::Point(InfoX, InfoY + 225),
-        fontFace, 0.6,
+        FONT, FONT_SIZE_SMALL,
         cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
     int IndexOfDot = Name.find_last_of("\\/") + 1;
     cv::putText(resultWin, "File location: " + Name.substr(0, IndexOfDot),
         cv::Point(InfoX, InfoY + 330),
-        fontFace, 0.6,
+        FONT, FONT_SIZE_SMALL,
         cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
     cv::putText(resultWin, "Codec: " + codecStr,
         cv::Point(InfoX, InfoY + 260),
-        fontFace, 0.6,
+        FONT, FONT_SIZE_SMALL,
         cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
     cv::putText(resultWin, sizeText,
         cv::Point(InfoX, InfoY + 295),
-        fontFace, 0.6, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+        FONT, FONT_SIZE_SMALL, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
     cv::putText(resultWin, "Exit",
         cv::Point((sizeOfWindow.width) / 2 + 262, (InfoY * 3) - 35),
-        fontFace, 0.6,
+        FONT, FONT_SIZE_SMALL,
         cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
 }
 //Функция отрисовки меню скорости
 int DrawSpeedMenu(int targetDelay, const cv::Rect& sizeOfWindow, cv::Mat& resultWin) {
-    const int SPEED_MENU_POS_X = sizeOfWindow.width / 2 + 255;
-    const int SPEED_MENU_POS_Y = sizeOfWindow.height - 80;
-    DrawSpecificFigure SpeedMenu(SPEED_MENU_POS_X, SPEED_MENU_POS_Y - 150, 50, 150);
-    SpeedMenu.DrawRoundedRectangle(resultWin, cv::Scalar(0, 0, 0), 11);
+    const int SPEED_MENU_POS_X = sizeOfWindow.width / 2 + SPEED_MENU_X_OFFSET;
+    const int SPEED_MENU_POS_Y = sizeOfWindow.height - SPEED_MENU_Y_OFFSET;
+    DrawSpecificFigure SpeedMenu(SPEED_MENU_POS_X, SPEED_MENU_POS_Y - 150, SPEED_MENU_WIDTH, SPEED_MENU_HEIGHT);
+    SpeedMenu.DrawRoundedRectangle(resultWin, cv::Scalar(0, 0, 0), SPEED_MENU_RADIUS);
     SpeedMenuItem speedItems[] = {
     {"2x",   targetDelay / 2,   2.0f, -10},
     {"1.5x", targetDelay / 1.5, 1.5f, -50},
@@ -739,7 +747,7 @@ int DrawSpeedMenu(int targetDelay, const cv::Rect& sizeOfWindow, cv::Mat& result
     for (int i = 0; i < 4; i++) {
         int itemY = SPEED_MENU_POS_Y + speedItems[i].yOffset;
         cv::putText(resultWin, speedItems[i].TEXT, cv::Point(SPEED_MENU_POS_X + (i == 1 || i == 3 ? 4.5 : 13.5), itemY),
-            fontFace, 0.6, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+            FONT, FONT_SIZE_SMALL, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
         bool isHover;
         if (mousePos.x > SPEED_MENU_POS_X - 10 && mousePos.x < SPEED_MENU_POS_X + 60 &&
             mousePos.y > itemY - 35 && mousePos.y < itemY) {
@@ -763,7 +771,7 @@ int DrawSpeedMenu(int targetDelay, const cv::Rect& sizeOfWindow, cv::Mat& result
     }
     return targetDelay;
 }
-
+//Функция проверки на спящий режим
 void SleepMode() {
         auto nowTimer = std::chrono::steady_clock::now();
         auto elapsedTimer = std::chrono::duration_cast<std::chrono::milliseconds>(nowTimer - startTimer).count();
@@ -781,7 +789,7 @@ void SleepMode() {
             
         }
 }
-
+//Функция проверки горячих клавиш
 void CheckButtonCodes(int key, cv::Mat& frame, cv::VideoCapture& cap) {
         if (key == 32) { // кнопка Space (пауза)
             isPaused = !isPaused;
@@ -800,10 +808,13 @@ void CheckButtonCodes(int key, cv::Mat& frame, cv::VideoCapture& cap) {
         else if (key == 251 || key == 219 || key == 115 || key == 83) { //кнопка S (скриншот)
             GetScreen(frame);
         }
+        else if (key == 228 || key == 196 || key == 76 || key == 108) { //кнопка L (скриншот)
+            loopActive = !loopActive;
+        }
         //Получаем коды нажатых кнопок в консоли
-        /*if (key > 0) {
+        if (key > 0) {
             std::cout << "Key code: " << key << std::endl;
-        }*/
+        }
 }
 
 int main(int argc, char* argv[]) {
@@ -854,7 +865,7 @@ int main(int argc, char* argv[]) {
             std::string LoadingString = "Loading";
             for (int j = 0; j < (i % 4); j++) LoadingString += ".";
                 cv::putText(loadingScreen, LoadingString, cv::Point((screenWidth / 2) - 70, screenHeight / 2),
-                fontFace, 1.2, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+                FONT, 1.2, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
                 cv::imshow("Video Player", loadingScreen);
                 cv::waitKey(300);  // пауза 200 мс
         }
@@ -1007,18 +1018,18 @@ int main(int argc, char* argv[]) {
            FinalName = OldName.substr(OldName.find_last_of("\\/") + 1);
         }
             if (FinalName.length() < 10) {
-                cv::putText(result, FinalName,cv::Point(50, windowSize.height - 37.5),fontFace, 0.9,cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+                cv::putText(result, FinalName,cv::Point(50, windowSize.height - 37.5),FONT, 0.9,cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
             }
             else {
                 cv::putText(result, FinalName.substr(0, 13) + ".." + FinalName.substr(FinalName.find_last_of(".")),
-                cv::Point(50, windowSize.height - 37.5),fontFace, 0.9,cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+                cv::Point(50, windowSize.height - 37.5),FONT, 0.9,cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
             }
         int NameIndex = FinalName.find_last_of(".");
         if (featuresActive == true) {
             DrawSpecificFigure FeaturesBG((windowSize.width) / 4, (windowSize.height) / 4, (windowSize.width) / 2, (windowSize.height) / 2);
             FeaturesBG.DrawRoundedRectangle(result, cv::Scalar(30, 30, 30), 20);
             std::string sizeText = GetSize(bytes);
-            std::string codecStrPrint = GetCodec(codecStr,FinalName,OldName);
+            std::string codecStrPrint = SetCodec(codecStr,FinalName,OldName);
             if (mousePos.x > (windowSize.width) / 2 + 215 && mousePos.x < (windowSize.width) / 2 + 230 + 115 && mousePos.y < (((windowSize.height) / 4) * 3) - 15 && mousePos.y >(((windowSize.height) / 4) * 3) - 60) {
                 DrawSpecificFigure FeaturesBGExit((windowSize.width) / 2 + 230, (((windowSize.height) / 4) * 3) - 50, 100, 20);
                 FeaturesBGExit.DrawRoundedRectangle(result, cv::Scalar(50, 50, 50), 10);
@@ -1054,8 +1065,8 @@ int main(int argc, char* argv[]) {
                 DrawSpeedMenu(targetDelay, windowSize, result);
                 targetDelay = DrawSpeedMenu(targetDelay, windowSize, result);
             }
-            int volumeBarX = windowSize.width - 320;
-            int volumeBarY = windowSize.height - 48;
+            int volumeBarX = windowSize.width - VOLUME_BAR_X_OFFSET;
+            int volumeBarY = windowSize.height - VOLUME_BAR_Y_OFFSET;
             // Отрисовка шкалы громкости
             Interface.VolumeBar(windowSize, result, volumeBarX, volumeBarY);
             //Отрисовка кнопки громкости
