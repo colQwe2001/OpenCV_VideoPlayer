@@ -514,6 +514,22 @@ public:
             cv::circle(resultWin, cv::Point(ButtonPosX, ButtonPosY), BTN_RADIUS_SMALL, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
         }
     }
+    void Name(cv::Mat& resultWin, const cv::Rect& sizeOfWindow, std::string Name, std::string OldName, std::string& FinalName) {
+        if (converted == false) {
+            FinalName = Name.substr(Name.find_last_of("\\/") + 1);
+        }
+        else {
+            FinalName = OldName.substr(OldName.find_last_of("\\/") + 1);
+        }
+        if (FinalName.length() < 10) {
+            cv::putText(resultWin, FinalName, cv::Point(50, sizeOfWindow.height - 37.5), FONT, 0.9, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+        }
+        else {
+            cv::putText(resultWin, FinalName.substr(0, 13) + ".." + FinalName.substr(FinalName.find_last_of(".")),
+                cv::Point(50, sizeOfWindow.height - 37.5), FONT, 0.9, cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
+        }
+        int NameIndex = FinalName.find_last_of(".");
+    }
 };
 //структура для хранения элементов меню скорости
 struct SpeedMenuItem {
@@ -1008,23 +1024,11 @@ int main(int argc, char* argv[]) {
         int totalTimeMinutes = (totalFrames / fps) / 60;
         int totalTimeSeconds = (int)(totalFrames / fps) % 60;
         int remainingTime = (totalFrames / fps) - (currentFrame / fps);
-
+        DrawInterface Interface(windowSize.width / 2, windowSize.height - 55, cap);
         //Название видео
         std::string FinalName;
-        if (converted == false) {
-           FinalName = Name.substr(Name.find_last_of("\\/") + 1);
-        }
-        else {
-           FinalName = OldName.substr(OldName.find_last_of("\\/") + 1);
-        }
-            if (FinalName.length() < 10) {
-                cv::putText(result, FinalName,cv::Point(50, windowSize.height - 37.5),FONT, 0.9,cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-            }
-            else {
-                cv::putText(result, FinalName.substr(0, 13) + ".." + FinalName.substr(FinalName.find_last_of(".")),
-                cv::Point(50, windowSize.height - 37.5),FONT, 0.9,cv::Scalar(UI_COLOR), 1, cv::LINE_AA);
-            }
-        int NameIndex = FinalName.find_last_of(".");
+        Interface.Name(result, windowSize, Name, OldName,  FinalName);
+
         if (featuresActive == true) {
             DrawSpecificFigure FeaturesBG((windowSize.width) / 4, (windowSize.height) / 4, (windowSize.width) / 2, (windowSize.height) / 2);
             FeaturesBG.DrawRoundedRectangle(result, cv::Scalar(30, 30, 30), 20);
@@ -1040,7 +1044,7 @@ int main(int argc, char* argv[]) {
             }
             FeaturesDraw(result, windowSize, FinalName, OldName, std::to_string(totalTimeMinutes), std::to_string(totalTimeSeconds), videoW, videoH, fps, codecStrPrint, sizeText);
         }
-        DrawInterface Interface(windowSize.width / 2, windowSize.height - 55, cap);
+
         //Кнопка скриншота
         if (IsSleep == false) {
             //
